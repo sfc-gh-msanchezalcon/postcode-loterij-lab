@@ -2,7 +2,7 @@
 
 ## Hands-on: Building AI-Powered Player Intelligence with Snowflake
 
-**Duration**: 1.5 hours  
+**Duration**: 1.5 hours (+ optional bonus module)  
 **Audience**: Mixed (Snowflake beginners and experienced users)  
 **Prerequisites**: A Snowflake account with ACCOUNTADMIN access
 
@@ -17,32 +17,37 @@ By the end you will have:
 1. **Synthetic lottery data** — 10,000 players, 24 months of draws, 30 charity partners
 2. **AI-enriched player intelligence** — sentiment analysis, segmentation, insights extraction, and personalized messages using Cortex AI
 3. **An interactive Streamlit dashboard** — branded with Postcode Loterij colors, featuring player KPIs, charts, a live winner draft with animation, and an AI chatbot
-4. **Experience with Cortex Code** — see how AI can build Snowflake solutions for you
+4. **A Semantic View & Cortex Agent** — a business-friendly data model that powers a natural language AI agent
 
 ### Architecture Overview
 
 ```
-                    SNOWFLAKE ACCOUNT
-    ┌──────────────────────────────────────────────┐
-    │                                              │
-    │  ┌─────────┐   Cortex AI    ┌────────────┐  │
-    │  │ RAW     │ ────────────>  │ ANALYTICS  │  │
-    │  │ Schema  │  Sentiment     │ Schema     │  │
-    │  │         │  Classify      │            │  │
-    │  │ PLAYERS │  Extract       │ PLAYER_    │  │
-    │  │ DRAWS   │                │ INTELLI-   │  │
-    │  │ TICKETS │                │ GENCE      │  │
-    │  │ CHARITIES│               │            │  │
-    │  │ DONATIONS│               │ Views      │  │
-    │  └─────────┘               └─────┬──────┘  │
-    │                                  │          │
-    │                          ┌───────▼────────┐ │
-    │                          │ STREAMLIT APP  │ │
-    │                          │ Dashboard      │ │
-    │                          │ Winner Draft   │ │
-    │                          │ AI Chatbot     │ │
-    │                          └────────────────┘ │
-    └──────────────────────────────────────────────┘
+                       SNOWFLAKE ACCOUNT
+    ┌─────────────────────────────────────────────────────┐
+    │                                                     │
+    │  ┌─────────┐   Cortex AI    ┌──────────────┐       │
+    │  │ RAW     │ ────────────>  │ ANALYTICS    │       │
+    │  │ Schema  │  Sentiment     │ Schema       │       │
+    │  │         │  Classify      │              │       │
+    │  │ PLAYERS │  Extract       │ PLAYER_      │       │
+    │  │ DRAWS   │                │ INTELLIGENCE │       │
+    │  │ TICKETS │                │              │       │
+    │  │ CHARITIES│               │ Views        │       │
+    │  │ DONATIONS│               └──────┬───────┘       │
+    │  └─────────┘                       │               │
+    │                          ┌─────────▼──────────┐    │
+    │                          │ SEMANTIC VIEW       │    │
+    │                          │ Business data model │    │
+    │                          └─────────┬──────────┘    │
+    │                    ┌───────────────┼────────┐      │
+    │            ┌───────▼────────┐  ┌───▼──────┐ │      │
+    │            │ STREAMLIT APP  │  │ CORTEX   │ │      │
+    │            │ Dashboard      │  │ AGENT    │ │      │
+    │            │ Winner Draft   │  │ NL → SQL │ │      │
+    │            │ AI Chatbot     │  └──────────┘ │      │
+    │            └────────────────┘               │      │
+    │                                             │      │
+    └─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -56,7 +61,8 @@ By the end you will have:
 | 2 | AI Enrichment with Cortex AI Functions | 25 min |
 | 3 | Build Streamlit Dashboard | 20 min |
 | 4 | Explore & Interact with the App | 10 min |
-| 5 | Cortex Code Challenge | 15 min |
+| 5 | Semantic View & Cortex Agent | 15 min |
+| **Bonus** | **Cortex Code Challenge** | **15 min** |
 
 ---
 
@@ -1225,9 +1231,282 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 
 ---
 
-## Module 5: Cortex Code Challenge (15 min)
+## Module 5: Semantic View & Cortex Agent (15 min)
 
-**Goal**: Experience how AI can accelerate Snowflake development.
+**Goal**: Create a business-friendly data model (Semantic View) and an AI agent that can answer natural language questions about your player data by automatically generating SQL.
+
+### What is a Semantic View?
+
+A **Semantic View** is a metadata layer you define on top of your tables. It tells Snowflake's AI what your columns mean in business terms — which columns are dimensions (things you filter/group by), which are facts (raw values), and which are metrics (aggregations like counts and averages).
+
+Once defined, Snowflake's **Cortex Analyst** can read the semantic view and automatically convert natural language questions into accurate SQL queries. Instead of writing SQL yourself, you just ask: *"What is the average spend by city?"* and Cortex Analyst generates the correct query.
+
+Think of it as a **data dictionary that AI can understand**.
+
+### What is a Cortex Agent?
+
+A **Cortex Agent** is an AI orchestrator that sits on top of tools like Semantic Views. You give it instructions about your business, connect it to one or more data sources, and it figures out which tool to use for each question. It can:
+
+- Convert natural language to SQL via Cortex Analyst (using your Semantic View)
+- Search unstructured documents via Cortex Search
+- Chain multiple tools together to answer complex questions
+
+### 5.1 Create the Semantic View
+
+This semantic view defines the business meaning of our PLAYER_INTELLIGENCE table. Run this in your SQL worksheet:
+
+```sql
+USE SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
+
+CREATE OR REPLACE SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW
+
+  TABLES (
+    player_intelligence AS POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+      PRIMARY KEY (PLAYER_ID)
+      COMMENT = 'AI-enriched player data with 10,000 lottery players'
+  )
+
+  FACTS (
+    player_intelligence.monthly_spend AS MONTHLY_SPEND
+      WITH SYNONYMS = ('spend', 'monthly cost', 'payment')
+      COMMENT = 'Monthly subscription amount in EUR (15, 30, or 45)',
+
+    player_intelligence.tenure_months AS TENURE_MONTHS
+      WITH SYNONYMS = ('tenure', 'months active', 'loyalty')
+      COMMENT = 'Number of months since the player subscribed',
+
+    player_intelligence.feedback_sentiment AS FEEDBACK_SENTIMENT
+      WITH SYNONYMS = ('sentiment', 'satisfaction', 'mood')
+      COMMENT = 'AI sentiment score from -1 (very negative) to +1 (very positive)',
+
+    player_intelligence.estimated_lifetime_value AS ESTIMATED_LIFETIME_VALUE
+      WITH SYNONYMS = ('LTV', 'lifetime value', 'total spend')
+      COMMENT = 'Total estimated spend: monthly_spend * tenure_months',
+
+    player_intelligence.charity_contribution AS CHARITY_CONTRIBUTION
+      WITH SYNONYMS = ('charity impact', 'donation', 'good cause contribution')
+      COMMENT = '40% of lifetime value that goes to charity partners'
+  )
+
+  DIMENSIONS (
+    player_intelligence.player_name AS PLAYER_NAME
+      WITH SYNONYMS = ('name', 'speler')
+      COMMENT = 'Full name of the player',
+
+    player_intelligence.city AS CITY
+      WITH SYNONYMS = ('stad', 'location', 'place')
+      COMMENT = 'City where the player lives',
+
+    player_intelligence.postcode AS POSTCODE
+      WITH SYNONYMS = ('postal code', 'zip code', 'postcode')
+      COMMENT = 'Dutch postcode (4 digits + 2 letters). Players with the same postcode are neighbours and win together.',
+
+    player_intelligence.status AS STATUS
+      WITH SYNONYMS = ('player status', 'subscription status')
+      COMMENT = 'Current subscription status: Active, Churned, or Paused',
+
+    player_intelligence.age_group AS AGE_GROUP
+      WITH SYNONYMS = ('age', 'leeftijd', 'age range')
+      COMMENT = 'Age bracket of the player (e.g. 25-35, 45-55)',
+
+    player_intelligence.ticket_type AS TICKET_TYPE
+      WITH SYNONYMS = ('lot type', 'subscription type')
+      COMMENT = 'Number of lots: 1-lot (EUR 15), 2-lot (EUR 30), or 3-lot (EUR 45)',
+
+    player_intelligence.acquisition_channel AS ACQUISITION_CHANNEL
+      WITH SYNONYMS = ('channel', 'source', 'how they joined')
+      COMMENT = 'Marketing channel through which the player was acquired',
+
+    player_intelligence.segment AS PLAYER_SEGMENT_JSON:labels[0]::VARCHAR
+      WITH SYNONYMS = ('segment', 'player segment', 'classification', 'category')
+      COMMENT = 'AI-classified player segment: High-Value Loyal, Engaged Regular, New Player, At-Risk, Dormant, or Price-Sensitive',
+
+    player_intelligence.subscription_start AS SUBSCRIPTION_START
+      COMMENT = 'Date the player first subscribed'
+  )
+
+  METRICS (
+    player_intelligence.player_count AS COUNT(PLAYER_ID)
+      WITH SYNONYMS = ('number of players', 'total players', 'how many players')
+      COMMENT = 'Total number of players',
+
+    player_intelligence.avg_monthly_spend AS AVG(MONTHLY_SPEND)
+      WITH SYNONYMS = ('average spend', 'mean spend')
+      COMMENT = 'Average monthly subscription spend in EUR',
+
+    player_intelligence.avg_sentiment AS AVG(FEEDBACK_SENTIMENT)
+      WITH SYNONYMS = ('average sentiment', 'mean sentiment', 'happiness score')
+      COMMENT = 'Average feedback sentiment score',
+
+    player_intelligence.total_charity_impact AS SUM(CHARITY_CONTRIBUTION)
+      WITH SYNONYMS = ('total charity', 'total donations', 'charity total')
+      COMMENT = 'Total EUR contributed to charity partners',
+
+    player_intelligence.total_ltv AS SUM(ESTIMATED_LIFETIME_VALUE)
+      WITH SYNONYMS = ('total lifetime value', 'total revenue')
+      COMMENT = 'Sum of all player lifetime values',
+
+    player_intelligence.avg_tenure AS AVG(TENURE_MONTHS)
+      WITH SYNONYMS = ('average tenure', 'how long players stay')
+      COMMENT = 'Average number of months players have been subscribed',
+
+    player_intelligence.churn_rate AS
+      SUM(CASE WHEN STATUS = 'Churned' THEN 1 ELSE 0 END) * 100.0 / COUNT(PLAYER_ID)
+      WITH SYNONYMS = ('churn percentage', 'attrition rate')
+      COMMENT = 'Percentage of players who have churned'
+  )
+
+  COMMENT = 'Postcode Loterij player intelligence - AI-enriched player data with segments, sentiment, and charity impact'
+  AI_SQL_GENERATION 'When calculating metrics per segment, use PLAYER_SEGMENT_JSON:labels[0]::VARCHAR as the segment column. Round all monetary values to 2 decimal places and percentages to 1 decimal place.'
+;
+```
+
+You should see: `Statement executed successfully.`
+
+> **Snowflake Concept — Semantic View:**
+>
+> | Component | What it defines | Example |
+> |-----------|----------------|---------|
+> | **TABLES** | Which physical tables to use | `PLAYER_INTELLIGENCE` |
+> | **FACTS** | Raw numeric values per row | Monthly spend, Tenure |
+> | **DIMENSIONS** | Columns to filter/group by | City, Status, Segment |
+> | **METRICS** | Aggregations (computed from facts) | `AVG(MONTHLY_SPEND)`, `COUNT(PLAYER_ID)` |
+> | **SYNONYMS** | Alternative names the AI understands | "how many players" → `player_count` |
+> | **AI_SQL_GENERATION** | Custom instructions for SQL generation | "Round monetary values to 2 decimal places" |
+>
+> The semantic view does not store data — it's a metadata definition. When someone asks a question, Cortex Analyst reads this definition to understand how to write the SQL query.
+
+### 5.2 Verify the Semantic View
+
+```sql
+-- List all semantic views in the schema
+SHOW SEMANTIC VIEWS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
+
+-- See the dimensions, facts, and metrics defined
+SHOW SEMANTIC DIMENSIONS FOR SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW;
+SHOW SEMANTIC METRICS FOR SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW;
+```
+
+You should see your dimensions (city, status, segment, etc.) and metrics (player_count, avg_monthly_spend, churn_rate, etc.) listed.
+
+### 5.3 Create the Cortex Agent
+
+Now we create an agent that uses this semantic view as its data tool. The agent will be able to answer natural language questions by generating SQL:
+
+```sql
+CREATE OR REPLACE AGENT POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_AGENT
+  COMMENT = 'AI agent for Postcode Loterij player intelligence analysis'
+  PROFILE = '{"display_name": "Loterij Intelligence Agent", "color": "red"}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: claude-4-sonnet
+
+  orchestration:
+    budget:
+      seconds: 30
+      tokens: 16000
+
+  instructions:
+    system: >
+      You are an analytics assistant for the Postcode Loterij (Dutch Postcode Lottery).
+      You help business users understand player data, segment performance, charity impact,
+      and retention patterns. Always give specific numbers. When asked for recommendations,
+      be actionable and reference the data.
+
+      Key business context:
+      - Postcode Loterij is the largest charity lottery in the Netherlands
+      - Players subscribe monthly using their postcode as their ticket number
+      - Neighbours win together (same postcode = same prize)
+      - 40% of all revenue goes to 150+ charity partners
+      - Player segments: High-Value Loyal, Engaged Regular, New Player, At-Risk, Dormant, Price-Sensitive
+
+    response: >
+      Respond in a friendly but professional manner. Use specific numbers from the data.
+      Format large numbers with thousands separators. Use EUR for currency.
+
+    sample_questions:
+      - question: "How many active players do we have?"
+        answer: "I'll query the player intelligence data to get the current count of active players."
+      - question: "What is the average spend by segment?"
+        answer: "Let me break down the average monthly spend for each player segment."
+      - question: "Which city has the highest churn rate?"
+        answer: "I'll analyze churn rates across all cities to find the highest."
+      - question: "What is our total charity impact?"
+        answer: "I'll calculate the total charity contributions from all players."
+
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "PlayerAnalyst"
+        description: "Analyzes Postcode Loterij player data including segments, sentiment, spend, churn, and charity impact"
+
+  tool_resources:
+    PlayerAnalyst:
+      semantic_view: "POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW"
+  $$;
+```
+
+You should see: `Statement executed successfully.`
+
+> **Snowflake Concept — Cortex Agent:**
+>
+> The agent has three key parts:
+> - **Instructions**: Tell the AI how to behave and what business context it needs
+> - **Tools**: What capabilities the agent has (here: `cortex_analyst_text_to_sql` which converts questions to SQL)
+> - **Tool Resources**: Connect each tool to a data source (here: our semantic view)
+>
+> When you ask a question, the agent: (1) reads your question, (2) decides which tool to use, (3) passes the question to Cortex Analyst, (4) Cortex Analyst reads the Semantic View to generate SQL, (5) runs the SQL, (6) the agent formats the response.
+
+### 5.4 Test the Agent
+
+You can test the agent directly from Snowsight:
+
+1. In the left sidebar, click **AI & ML** > **Agents**
+2. You should see **Loterij Intelligence Agent** in the list
+3. Click on it to open the chat interface
+4. Try these questions:
+
+   - *"How many players do we have per segment?"*
+   - *"What is the average sentiment score for At-Risk players compared to High-Value Loyal?"*
+   - *"Which acquisition channel brings the most players?"*
+   - *"What is our total charity impact from active players?"*
+   - *"Show me the churn rate by city"*
+
+5. Notice how the agent generates SQL automatically — you can see the query it ran and the results
+
+> **Compare this to the Streamlit chatbot** (Module 3, Tab 3): The Streamlit chatbot uses hardcoded data context — we manually pasted segment summaries and KPIs into the prompt. The Cortex Agent dynamically queries the actual database using your Semantic View. It can answer questions the Streamlit chatbot cannot, because it writes real SQL instead of relying on pre-loaded context.
+
+### 5.5 What You Just Built
+
+You created a complete AI analytics stack:
+
+```
+Natural language question
+        │
+        ▼
+   CORTEX AGENT (understands business context)
+        │
+        ▼
+   CORTEX ANALYST (reads semantic view, generates SQL)
+        │
+        ▼
+   SEMANTIC VIEW (defines dimensions, facts, metrics)
+        │
+        ▼
+   PLAYER_INTELLIGENCE table (AI-enriched data)
+        │
+        ▼
+   Answer with real numbers
+```
+
+This is the same architecture that production Snowflake customers use to give business users self-service analytics without writing SQL.
+
+---
+
+## Bonus Module: Cortex Code Challenge (for those who finish early)
+
+**Finished the lab early?** Use Cortex Code to extend what you built.
 
 **Cortex Code** is Snowflake's AI-powered CLI assistant. You describe what you want in natural language, and it writes the SQL, Python, or Streamlit code for you.
 
@@ -1244,7 +1523,10 @@ Use Cortex Code to build something new on top of the data you created. Pick one 
 **Option C — Churn Risk Dashboard**
 > *"Create a view called CHURN_RISK_REPORT that identifies players most likely to churn based on their sentiment score, tenure, and spend. Include a risk score and sort by highest risk first."*
 
-**Option D — Your Own Idea**
+**Option D — Expand the Semantic View**
+> *"Add the CHARITIES and DONATIONS tables to the PLAYER_SEMANTIC_VIEW so the agent can also answer questions about charity funding, donation amounts per draw, and which charities receive the most."*
+
+**Option E — Your Own Idea**
 > Think about what would be valuable for Postcode Loterij and describe it to Cortex Code.
 
 ### How to Use Cortex Code
@@ -1272,6 +1554,8 @@ Your instructor will guide you through accessing Cortex Code. The general workfl
 | Personalized messages | `SNOWFLAKE.CORTEX.COMPLETE` | Generates custom retention copy using an LLM |
 | Interactive dashboard | Streamlit in Snowflake | Three-tab branded dashboard with KPIs, charts, and tables |
 | AI chatbot | `SNOWFLAKE.CORTEX.COMPLETE` + Streamlit | Conversational analytics assistant with data context |
+| Semantic View | `CREATE SEMANTIC VIEW` | Business data model with dimensions, facts, and metrics |
+| AI Agent | `CREATE AGENT` + Cortex Analyst | Natural language to SQL — ask questions, get answers |
 
 **Everything ran inside Snowflake.** No external APIs. No additional tools. No data left your account.
 
@@ -1292,6 +1576,10 @@ DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
 
 - [Snowflake Cortex AI Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex)
 - [Streamlit in Snowflake Documentation](https://docs.snowflake.com/en/developer-guide/streamlit/about-streamlit)
+- [Semantic Views Documentation](https://docs.snowflake.com/en/user-guide/views-semantic/sql)
+- [Cortex Agents Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents)
+- [CREATE SEMANTIC VIEW Reference](https://docs.snowflake.com/en/sql-reference/sql/create-semantic-view)
+- [CREATE AGENT Reference](https://docs.snowflake.com/en/sql-reference/sql/create-agent)
 - [AI_CLASSIFY Function Reference](https://docs.snowflake.com/en/sql-reference/functions/ai_classify)
 - [AI_EXTRACT Function Reference](https://docs.snowflake.com/en/sql-reference/functions/ai_extract)
 - [CORTEX.COMPLETE Function Reference](https://docs.snowflake.com/en/sql-reference/functions/complete-snowflake-cortex)
