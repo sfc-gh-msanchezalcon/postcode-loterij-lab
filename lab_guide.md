@@ -1088,7 +1088,7 @@ with tab1:
     st.dataframe(seg_detail, use_container_width=True)
 
     st.subheader("Charity Impact by Category")
-    st.markdown('<div class="charity-banner">40% of every ticket sold goes directly to charity partners</div>', unsafe_allow_html=True)
+    st.markdown('<div class="charity-banner">40% of every ticket sold goes directly to charity partners — over 150 organizations supported</div>', unsafe_allow_html=True)
     charity_cat = session.sql("""
         SELECT CATEGORY, COUNT(DISTINCT CHARITY_NAME) AS CHARITIES,
             ROUND(SUM(TOTAL_RECEIVED), 0) AS TOTAL_DONATED
@@ -1164,7 +1164,7 @@ with tab2:
 
         st.markdown("---")
         st.subheader("Charities supported by this draw")
-        st.markdown('<div class="charity-banner">Every draw directly funds charity partners</div>', unsafe_allow_html=True)
+        st.markdown('<div class="charity-banner">Every draw directly funds charity partners. Here are the top beneficiaries:</div>', unsafe_allow_html=True)
         charity_draw = session.sql(f"""
             SELECT CHARITY_NAME, CATEGORY, ROUND(DONATION_AMOUNT, 2) AS DONATED
             FROM POSTCODE_LOTERIJ_AI.RAW.DONATIONS

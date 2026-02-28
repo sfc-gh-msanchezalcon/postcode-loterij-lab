@@ -48,7 +48,7 @@ A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution
 
 | Feature | What it does | Module |
 |---------|-------------|--------|
-| **GENERATOR + UNIFORM + RANDSTR** | Generate realistic synthetic data entirely in SQL | 1 |
+| **GENERATOR + UNIFORM + CHR** | Generate realistic synthetic data entirely in SQL | 1 |
 | **CORTEX.SENTIMENT** | Score player feedback from -1 (negative) to +1 (positive) | 2 |
 | **CORTEX.AI_CLASSIFY** | Categorize players into segments (High-Value Loyal, At-Risk, etc.) | 2 |
 | **CORTEX.AI_EXTRACT** | Pull structured fields (interests, complaints, preferences) from free-text feedback | 2 |
@@ -87,6 +87,10 @@ A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution
 postcode_loterij_lab/
 ├── README.md                 ← You are here
 ├── lab_guide.md              ← Full step-by-step lab guide (start here)
+├── assets/
+│   ├── banner.svg            ← GitHub README banner
+│   ├── border.svg            ← Red-to-blue gradient bar
+│   └── divider.svg           ← Diamond section divider
 ├── scripts/
 │   ├── 01_setup.sql          ← Module 1: Database, tables, synthetic data
 │   └── 02_ai_enrichment.sql  ← Module 2: Cortex AI enrichment pipeline

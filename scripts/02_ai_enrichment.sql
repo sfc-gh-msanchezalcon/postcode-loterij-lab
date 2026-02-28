@@ -38,7 +38,7 @@ SELECT
         'Player profile: ' || p.STATUS || ' player, ' ||
         p.AGE_GROUP || ' years old, ' ||
         'subscribed for ' || p.TENURE_MONTHS || ' months, ' ||
-        'spends €' || p.MONTHLY_SPEND || '/month on ' || p.TICKET_TYPE || ', ' ||
+        'spends EUR' || p.MONTHLY_SPEND || '/month on ' || p.TICKET_TYPE || ', ' ||
         'acquired via ' || p.ACQUISITION_CHANNEL || '. ' ||
         'Feedback: ' || p.FEEDBACK_TEXT,
         ['High-Value Loyal', 'Engaged Regular', 'New Player', 'At-Risk', 'Dormant', 'Price-Sensitive']
@@ -57,7 +57,7 @@ SELECT
         'Player profile: ' || PLAYER_NAME || ', ' || STATUS || ' player from ' || CITY || '. ' ||
         'Age group: ' || AGE_GROUP || '. ' ||
         'Subscribed since ' || SUBSCRIPTION_START::VARCHAR || ' (' || TENURE_MONTHS || ' months). ' ||
-        'Plays ' || TICKET_TYPE || ' at €' || MONTHLY_SPEND || '/month via ' || ACQUISITION_CHANNEL || '. ' ||
+        'Plays ' || TICKET_TYPE || ' at EUR' || MONTHLY_SPEND || '/month via ' || ACQUISITION_CHANNEL || '. ' ||
         'Feedback: ' || FEEDBACK_TEXT,
         ['engagement_level', 'churn_risk', 'preferred_channel', 'key_motivation']
     ) AS EXTRACTED_INSIGHTS
@@ -75,7 +75,7 @@ SELECT
         'Player: ' || PLAYER_NAME || ' from ' || CITY || ' (postcode ' || POSTCODE || '). ' ||
         'Status: ' || STATUS || '. Age: ' || AGE_GROUP || '. ' ||
         'Has been a subscriber since ' || SUBSCRIPTION_START::VARCHAR || ' (' || TENURE_MONTHS || ' months). ' ||
-        'Ticket type: ' || TICKET_TYPE || ', monthly spend: €' || MONTHLY_SPEND || '. ' ||
+        'Ticket type: ' || TICKET_TYPE || ', monthly spend: EUR' || MONTHLY_SPEND || '. ' ||
         'Came through: ' || ACQUISITION_CHANNEL || '. ' ||
         'Their feedback: "' || FEEDBACK_TEXT || '"'
     ) AS PLAYER_SUMMARY
@@ -134,7 +134,7 @@ SELECT
         'Player profile: ' || p.STATUS || ' player, ' ||
         p.AGE_GROUP || ' years old, ' ||
         'subscribed for ' || p.TENURE_MONTHS || ' months, ' ||
-        'spends €' || p.MONTHLY_SPEND || '/month on ' || p.TICKET_TYPE || ', ' ||
+        'spends EUR' || p.MONTHLY_SPEND || '/month on ' || p.TICKET_TYPE || ', ' ||
         'acquired via ' || p.ACQUISITION_CHANNEL || '. ' ||
         'Feedback: ' || p.FEEDBACK_TEXT,
         ['High-Value Loyal', 'Engaged Regular', 'New Player', 'At-Risk', 'Dormant', 'Price-Sensitive']
@@ -145,7 +145,7 @@ SELECT
         'Player profile: ' || p.PLAYER_NAME || ', ' || p.STATUS || ' player from ' || p.CITY || '. ' ||
         'Age group: ' || p.AGE_GROUP || '. ' ||
         'Subscribed since ' || p.SUBSCRIPTION_START::VARCHAR || ' (' || p.TENURE_MONTHS || ' months). ' ||
-        'Plays ' || p.TICKET_TYPE || ' at €' || p.MONTHLY_SPEND || '/month via ' || p.ACQUISITION_CHANNEL || '. ' ||
+        'Plays ' || p.TICKET_TYPE || ' at EUR' || p.MONTHLY_SPEND || '/month via ' || p.ACQUISITION_CHANNEL || '. ' ||
         'Feedback: ' || p.FEEDBACK_TEXT,
         ['engagement_level', 'churn_risk', 'preferred_channel', 'key_motivation']
     ) AS EXTRACTED_INSIGHTS_JSON,
