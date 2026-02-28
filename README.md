@@ -1,8 +1,8 @@
-# Postcode Loterij AI Lab
+<p align="center">
+  <img src="assets/banner.svg" alt="Postcode Loterij AI Lab — Hands-on Snowflake Cortex AI Workshop" width="100%">
+</p>
 
-**Hands-on: Building AI-Powered Player Intelligence with Snowflake**
-
-A 1.5-hour workshop where you build an end-to-end AI analytics solution entirely within Snowflake — no external APIs, no additional tools, no data leaving your account.
+A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution entirely within Snowflake — no external APIs, no additional tools, no data leaving your account.
 
 ## What You Will Build
 

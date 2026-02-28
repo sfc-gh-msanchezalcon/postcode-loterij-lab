@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="200" viewBox="0 0 900 200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#E40421;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8031A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="900" height="200" rx="12" fill="url(#bg)"/>
+  <!-- Snowflake icon -->
+  <g transform="translate(60,100)" fill="white" opacity="0.95">
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <line x1="-26" y1="-15" x2="26" y2="15" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <line x1="-26" y1="15" x2="26" y2="-15" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <line x1="0" y1="-30" x2="-8" y2="-22" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="-30" x2="8" y2="-22" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="30" x2="-8" y2="22" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="30" x2="8" y2="22" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-26" y1="-15" x2="-26" y2="-5" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-26" y1="-15" x2="-18" y2="-19" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="26" y1="15" x2="26" y2="5" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="26" y1="15" x2="18" y2="19" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-26" y1="15" x2="-26" y2="5" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-26" y1="15" x2="-18" y2="19" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="26" y1="-15" x2="26" y2="-5" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="26" y1="-15" x2="18" y2="-19" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="5" fill="white"/>
+  </g>
+  <!-- Title text -->
+  <text x="120" y="85" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="bold" fill="white">Postcode Loterij AI Lab</text>
+  <!-- Subtitle -->
+  <text x="120" y="125" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="white" opacity="0.9">Hands-on Snowflake Cortex AI Workshop</text>
+  <!-- Tags -->
+  <rect x="120" y="145" width="90" height="26" rx="13" fill="white" opacity="0.2"/>
+  <text x="165" y="163" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="white" text-anchor="middle">Cortex AI</text>
+  <rect x="220" y="145" width="90" height="26" rx="13" fill="white" opacity="0.2"/>
+  <text x="265" y="163" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="white" text-anchor="middle">Streamlit</text>
+  <rect x="320" y="145" width="120" height="26" rx="13" fill="white" opacity="0.2"/>
+  <text x="380" y="163" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="white" text-anchor="middle">Semantic View</text>
+  <rect x="450" y="145" width="110" height="26" rx="13" fill="white" opacity="0.2"/>
+  <text x="505" y="163" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="white" text-anchor="middle">Cortex Agent</text>
+  <!-- Duration badge -->
+  <rect x="720" y="70" width="140" height="36" rx="18" fill="white" opacity="0.25"/>
+  <text x="790" y="94" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">1.5 hours</text>
+</svg>
