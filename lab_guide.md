@@ -16,16 +16,16 @@
 
 ---
 
-## 🎯 What You Will Build
+## What You Will Build
 
 In this lab you will create an end-to-end AI-powered analytics solution — entirely within Snowflake. No external APIs, no additional tools, no data leaving your account.
 
 By the end you will have:
 
-1. 🎲 **Synthetic lottery data** — 10,000 players, 24 months of draws, 30 charity partners
-2. 🧠 **AI-enriched player intelligence** — sentiment analysis, segmentation, insights extraction, and personalized messages using Cortex AI
-3. 📊 **An interactive Streamlit dashboard** — branded with Postcode Loterij colors, featuring player KPIs, charts, a live winner draft with animation, and an AI chatbot
-4. 🤖 **A Semantic View & Cortex Agent** — a business-friendly data model that powers a natural language AI agent
+1. **Synthetic lottery data** — 10,000 players, 24 months of draws, 30 charity partners
+2. **AI-enriched player intelligence** — sentiment analysis, segmentation, insights extraction, and personalized messages using Cortex AI
+3. **An interactive Streamlit dashboard** — branded with Postcode Loterij colors, featuring player KPIs, charts, a live winner draft with animation, and an AI chatbot
+4. **A Semantic View & Cortex Agent** — a business-friendly data model that powers a natural language AI agent
 
 ### Architecture Overview
 
@@ -60,21 +60,23 @@ By the end you will have:
 
 ---
 
-## 📋 Lab Agenda
+## Lab Agenda
 
 | # | Module | Duration |
 |:-:|--------|:--------:|
-| ⚙️ | **Module 0** — Environment Setup | 5 min |
-| 🏗️ | **Module 1** — Foundation: Create Database & Synthetic Data | 15 min |
-| 🧠 | **Module 2** — AI Enrichment with Cortex AI Functions | 25 min |
-| 📊 | **Module 3** — Build Streamlit Dashboard | 20 min |
-| 🔍 | **Module 4** — Explore & Interact with the App | 10 min |
-| 🤖 | **Module 5** — Semantic View & Cortex Agent | 15 min |
-| 🌟 | **Bonus** — Cortex Code Challenge | 15 min |
+| 0 | **Environment Setup** | 5 min |
+| 1 | **Foundation** — Create Database & Synthetic Data | 15 min |
+| 2 | **AI Enrichment** — Cortex AI Functions | 25 min |
+| 3 | **Streamlit Dashboard** — Build & Deploy | 20 min |
+| 4 | **Explore** — Interact with the App | 10 min |
+| 5 | **Semantic View & Cortex Agent** | 15 min |
+| + | **Bonus** — Cortex Code Challenge | 15 min |
 
 ---
 
-## ⚙️ Module 0: Environment Setup (5 min)
+<img src="https://img.shields.io/badge/Module_0-Environment_Setup-E40421?style=flat-square" alt="Module 0">
+
+## Module 0 — Environment Setup (5 min)
 
 ### 0.1 Log into Snowflake
 
@@ -82,7 +84,7 @@ By the end you will have:
 2. Log in with the credentials provided by your instructor
 3. You should see **Snowsight** — the Snowflake web interface
 
-> 💡 **What is Snowsight?** Snowsight is Snowflake's built-in web interface. It is where you write SQL, build dashboards, manage data, and create apps — all from the browser. There is nothing to install.
+> **What is Snowsight?** Snowsight is Snowflake's built-in web interface. It is where you write SQL, build dashboards, manage data, and create apps — all from the browser. There is nothing to install.
 
 ### 0.2 Open a SQL Worksheet
 
@@ -93,7 +95,7 @@ A SQL Worksheet is where you write and run SQL commands against Snowflake.
 3. Select **SQL Worksheet** from the dropdown
 4. A new worksheet opens. Click on the tab name (top-left, it will say something like "Untitled") and rename it to `Postcode Loterij Lab`
 
-> 💡 **Tip**: You can run individual SQL statements by placing your cursor on a statement and pressing **Ctrl+Enter** (Windows) or **Cmd+Enter** (Mac). To run multiple statements, select them all first, then press the same shortcut.
+> **Tip**: You can run individual SQL statements by placing your cursor on a statement and pressing **Ctrl+Enter** (Windows) or **Cmd+Enter** (Mac). To run multiple statements, select them all first, then press the same shortcut.
 
 ### 0.3 Set Your Role and Enable Cross-Region AI
 
@@ -109,15 +111,17 @@ ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION';
 
 You should see `Statement executed successfully.` for each.
 
-> 🔑 **What is a Role?** In Snowflake, a *role* controls what you can do. `ACCOUNTADMIN` is the most powerful role — it can create databases, warehouses, and manage account settings. In production you would use more restricted roles, but for this lab we need full access.
+> **What is a Role?** In Snowflake, a *role* controls what you can do. `ACCOUNTADMIN` is the most powerful role — it can create databases, warehouses, and manage account settings. In production you would use more restricted roles, but for this lab we need full access.
 
-> 🌍 **Why cross-region?** Snowflake Cortex AI functions (like sentiment analysis or LLM calls) run on specialized AI infrastructure hosted in specific cloud regions. If your Snowflake account is in a region without AI infrastructure, this setting allows your requests to be securely routed to the nearest available region. Your data stays encrypted in transit.
+> **Why cross-region?** Snowflake Cortex AI functions (like sentiment analysis or LLM calls) run on specialized AI infrastructure hosted in specific cloud regions. If your Snowflake account is in a region without AI infrastructure, this setting allows your requests to be securely routed to the nearest available region. Your data stays encrypted in transit.
 
 ---
 
-## 🏗️ Module 1: Foundation Setup (15 min)
+<img src="https://img.shields.io/badge/Module_1-Foundation_Setup-E40421?style=flat-square" alt="Module 1">
 
-> 🎯 **Goal**: Create the database, warehouse, and generate synthetic data that represents Postcode Loterij's business.
+## Module 1 — Foundation Setup (15 min)
+
+> **Goal**: Create the database, warehouse, and generate synthetic data that represents Postcode Loterij's business.
 
 ### 1.1 Create Database, Schemas, and Warehouse
 
@@ -142,7 +146,7 @@ USE WAREHOUSE LOTERIJ_WH;
 USE SCHEMA POSTCODE_LOTERIJ_AI.RAW;
 ```
 
-> 📘 **Snowflake Concepts — Database, Schema, Warehouse:**
+> **Snowflake Concepts — Database, Schema, Warehouse:**
 >
 > | Concept | What it is | Analogy |
 > |---------|-----------|---------|
@@ -202,7 +206,7 @@ INSERT INTO CHARITIES VALUES
 
 You should see: `number of rows inserted: 30`
 
-> 💡 **What is `CREATE OR REPLACE TABLE`?** This creates a new table (or replaces it if it already exists). The column definitions inside the parentheses define the table structure. Then `INSERT INTO ... VALUES` adds data row by row. This is ideal for small reference tables like our charity list.
+> **What is `CREATE OR REPLACE TABLE`?** This creates a new table (or replaces it if it already exists). The column definitions inside the parentheses define the table structure. Then `INSERT INTO ... VALUES` adds data row by row. This is ideal for small reference tables like our charity list.
 
 ### 1.3 Generate 10,000 Synthetic Players
 
@@ -316,7 +320,7 @@ JOIN postcode_pool pc ON p.postcode_idx = pc.rn;
 
 You should see: `Table PLAYERS successfully created.`
 
-> 📘 **Snowflake Concepts — Data Generation:**
+> **Snowflake Concepts — Data Generation:**
 >
 > | Function | What it does |
 > |----------|-------------|
@@ -397,7 +401,7 @@ FROM POSTCODE_LOTERIJ_AI.RAW.DRAWS d
 CROSS JOIN POSTCODE_LOTERIJ_AI.RAW.CHARITIES c;
 ```
 
-> 💡 **What is a CROSS JOIN?** A `CROSS JOIN` combines every row from one table with every row from another. For DONATIONS, we combine each of 24 draws with each of 30 charities = 720 donation records. For TICKETS, we combine active players with draws, then filter to ~60% participation using `UNIFORM(1, 10, RANDOM()) <= 6`.
+> **What is a CROSS JOIN?** A `CROSS JOIN` combines every row from one table with every row from another. For DONATIONS, we combine each of 24 draws with each of 30 charities = 720 donation records. For TICKETS, we combine active players with draws, then filter to ~60% participation using `UNIFORM(1, 10, RANDOM()) <= 6`.
 
 ### 1.5 Verify Your Data
 
@@ -426,7 +430,7 @@ ORDER BY TABLE_NAME;
 | PLAYERS    | 10,000    |
 | TICKETS    | ~100,000-120,000 |
 
-> ✅ **Checkpoint**: If your PLAYERS count is 10,000 and all other tables have data, you are on track. The exact TICKETS count varies because we randomly sampled ~60% participation per draw.
+> **Checkpoint**: If your PLAYERS count is 10,000 and all other tables have data, you are on track. The exact TICKETS count varies because we randomly sampled ~60% participation per draw.
 
 ### 1.6 Explore Your Data (Optional)
 
@@ -453,15 +457,17 @@ GROUP BY CATEGORY ORDER BY TOTAL_DONATED DESC;
 
 ---
 
-## 🧠 Module 2: AI Enrichment with Cortex AI (25 min)
+<img src="https://img.shields.io/badge/Module_2-AI_Enrichment-E40421?style=flat-square" alt="Module 2">
 
-> 🎯 **Goal**: Use five different Snowflake Cortex AI functions to transform raw player data into actionable intelligence — all running directly inside Snowflake SQL, no external APIs.
+## Module 2 — AI Enrichment with Cortex AI (25 min)
+
+> **Goal**: Use five different Snowflake Cortex AI functions to transform raw player data into actionable intelligence — all running directly inside Snowflake SQL, no external APIs.
 
 ### What is Snowflake Cortex AI?
 
 Cortex AI is a set of built-in AI functions that run directly in Snowflake. They work just like regular SQL functions — you call them in a `SELECT` statement and they return results. The key difference: these functions are powered by large language models (LLMs) and machine learning models running inside Snowflake's infrastructure.
 
-**🔒 Your data never leaves Snowflake.** There are no external API calls, no data exports, no third-party services involved.
+**Your data never leaves Snowflake.** There are no external API calls, no data exports, no third-party services involved.
 
 ### 2.0 Set Your Context
 
@@ -490,7 +496,7 @@ LIMIT 3;
 
 **What to look for**: Compare the feedback text with the score. A player saying *"I love playing with my neighbours"* should have a high positive score. A player saying *"Too expensive for what you get"* should have a negative score.
 
-> ⚙️ **How it works**: `SNOWFLAKE.CORTEX.SENTIMENT` uses a pre-trained NLP model to analyze text. You don't need to train anything or provide examples — it works out of the box on any text in any supported language.
+> **How it works**: `SNOWFLAKE.CORTEX.SENTIMENT` uses a pre-trained NLP model to analyze text. You don't need to train anything or provide examples — it works out of the box on any text in any supported language.
 
 ### 2.2 Player Segmentation with AI_CLASSIFY
 
@@ -515,7 +521,7 @@ LIMIT 3;
 
 **What to look for**: The result is a JSON object like `{"labels":["High-Value Loyal"]}`. The AI reads the entire profile and picks the most appropriate label from your array.
 
-> ⚙️ **How it works**: `AI_CLASSIFY` takes two arguments: (1) the text to classify, and (2) an array of possible labels. The AI model reads the text and determines which label fits best. No training data needed — you define the categories and the AI figures out the rest. This is called **zero-shot classification**.
+> **How it works**: `AI_CLASSIFY` takes two arguments: (1) the text to classify, and (2) an array of possible labels. The AI model reads the text and determines which label fits best. No training data needed — you define the categories and the AI figures out the rest. This is called **zero-shot classification**.
 
 ### 2.3 Extract Structured Insights with AI_EXTRACT
 
@@ -538,7 +544,7 @@ LIMIT 3;
 
 **What to look for**: The result is a JSON object with each field you requested, e.g., `{"engagement_level": "high", "churn_risk": "low", ...}`. The AI interprets what each field name means in context.
 
-> ⚙️ **How it works**: `AI_EXTRACT` takes text and an array of field names. The AI reads the text and fills in values for each field. You can use *any* field names — the AI infers what you mean from the name itself. Try changing the field names to things relevant to your own business!
+> **How it works**: `AI_EXTRACT` takes text and an array of field names. The AI reads the text and fills in values for each field. You can use *any* field names — the AI infers what you mean from the name itself. Try changing the field names to things relevant to your own business!
 
 ### 2.4 Summarize Player Profiles
 
@@ -559,7 +565,7 @@ FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
 LIMIT 3;
 ```
 
-> 💡 **Use case**: Imagine having 10,000 customer profiles. Instead of reading each one, you get a one-sentence summary. This is useful for customer service, account management, and reporting.
+> **Use case**: Imagine having 10,000 customer profiles. Instead of reading each one, you get a one-sentence summary. This is useful for customer service, account management, and reporting.
 
 ### 2.5 Generate Personalized Retention Messages
 
@@ -585,7 +591,7 @@ LIMIT 3;
 
 **What to look for**: Each player gets a unique, personalized message that references their specific feedback and situation. This is AI-generated marketing copy running directly in SQL.
 
-> ⚙️ **How it works**: `SNOWFLAKE.CORTEX.COMPLETE` takes two arguments: (1) the model name (e.g., `'claude-3-5-sonnet'`), and (2) a text prompt. The LLM generates a response based on the prompt. You can use this for any text generation task — emails, reports, translations, code, and more. The first argument selects which LLM to use; Snowflake supports several models.
+> **How it works**: `SNOWFLAKE.CORTEX.COMPLETE` takes two arguments: (1) the model name (e.g., `'claude-3-5-sonnet'`), and (2) a text prompt. The LLM generates a response based on the prompt. You can use this for any text generation task — emails, reports, translations, code, and more. The first argument selects which LLM to use; Snowflake supports several models.
 
 ### 2.6 Build the PLAYER_INTELLIGENCE Table
 
@@ -641,7 +647,7 @@ SELECT
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS p;
 ```
 
-> ⏳ **While it runs** (2-5 min): This query calls three AI functions per row across 10,000 rows. Snowflake parallelizes this automatically across the warehouse. Think about how long this would take with external API calls — you would need to manage rate limits, authentication, network latency, and data transfer. Here, it's just SQL.
+> **While it runs** (2-5 min): This query calls three AI functions per row across 10,000 rows. Snowflake parallelizes this automatically across the warehouse. Think about how long this would take with external API calls — you would need to manage rate limits, authentication, network latency, and data transfer. Here, it's just SQL.
 
 ### 2.7 Create Helper Views
 
@@ -689,7 +695,7 @@ GROUP BY d.DRAW_ID, d.DRAW_DATE, d.PRIZE_TYPE, d.TOTAL_PRIZE_POOL, d.WINNING_POS
 ORDER BY d.DRAW_DATE DESC;
 ```
 
-> 📘 **View vs Table — What's the difference?**
+> **View vs Table — What's the difference?**
 >
 > | | Table | View |
 > |---|-------|------|
@@ -717,7 +723,7 @@ LIMIT 5;
 SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY ORDER BY PLAYER_COUNT DESC;
 ```
 
-> ✅ **Checkpoint**: You should see:
+> **Checkpoint**: You should see:
 > - 10,000 rows in PLAYER_INTELLIGENCE
 > - Each row has a FEEDBACK_SENTIMENT score, a PLAYER_SEGMENT_JSON classification, and EXTRACTED_INSIGHTS_JSON
 > - The SEGMENT_SUMMARY view shows 6 segments with clean names like "High-Value Loyal", "At-Risk", etc.
@@ -726,9 +732,11 @@ SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY ORDER BY PLAYER_COUN
 
 ---
 
-## 📊 Module 3: Build the Streamlit Dashboard (20 min)
+<img src="https://img.shields.io/badge/Module_3-Streamlit_Dashboard-E40421?style=flat-square" alt="Module 3">
 
-> 🎯 **Goal**: Build an interactive, branded dashboard directly inside Snowflake using Streamlit in Snowflake (SiS).
+## Module 3 — Build the Streamlit Dashboard (20 min)
+
+> **Goal**: Build an interactive, branded dashboard directly inside Snowflake using Streamlit in Snowflake (SiS).
 
 ### What is Streamlit in Snowflake?
 
@@ -772,7 +780,7 @@ dependencies:
 
 4. Click back on **`streamlit_app.py`** in the file list
 
-> 💡 **Why pin the version?** Streamlit in Snowflake uses a default Streamlit version that may not include newer features like `chat_input` and `chat_message` (needed for our AI chatbot). By pinning to `1.35.0`, we ensure all features work correctly.
+> **Why pin the version?** Streamlit in Snowflake uses a default Streamlit version that may not include newer features like `chat_input` and `chat_message` (needed for our AI chatbot). By pinning to `1.35.0`, we ensure all features work correctly.
 
 ### 3.3 Paste the Dashboard Code
 
@@ -1176,7 +1184,7 @@ You should see:
 - **Three tabs**: Player Dashboard, Winner Draft, AI Assistant
 - The Player Dashboard tab loaded with KPI cards and charts
 
-> 🔧 **Troubleshooting**:
+> **Troubleshooting**:
 >
 > | Error | Fix |
 > |-------|-----|
@@ -1185,7 +1193,7 @@ You should see:
 > | `module 'streamlit' has no attribute 'chat_input'` | Check that `environment.yml` has `streamlit=1.35.0` |
 > | Charts show but no data | Make sure the AI enrichment query (Step 2.6) completed successfully |
 
-> 📘 **Snowflake Concept — Streamlit in Snowflake (SiS):**
+> **Snowflake Concept — Streamlit in Snowflake (SiS):**
 >
 > The Python code runs *inside Snowflake*, not on your laptop. Key elements:
 > - `get_active_session()` — connects to the Snowflake session that's hosting the app
@@ -1197,7 +1205,9 @@ You should see:
 
 ---
 
-## Module 4: Explore the App (10 min)
+<img src="https://img.shields.io/badge/Module_4-Explore_the_App-E40421?style=flat-square" alt="Module 4">
+
+## Module 4 — Explore the App (10 min)
 
 Now let's explore what you built. Take a few minutes to interact with each tab.
 
@@ -1222,7 +1232,7 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 7. Review the **winners table** — these are all active players who share that postcode
 8. Scroll down to see which **charities** were funded by this draw
 
-> 🎉 **This mirrors reality**: In the real Postcode Loterij, all neighbours who share a winning postcode win together. The prize pool is split among them. That's the "samen winnen" (winning together) concept.
+> **This mirrors reality**: In the real Postcode Loterij, all neighbours who share a winning postcode win together. The prize pool is split among them. That's the "samen winnen" (winning together) concept.
 
 ### 4.3 AI Assistant
 
@@ -1235,13 +1245,15 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
    - *"What would happen to charity funding if we reduced churn by 5%?"*
 5. Notice the AI gives **specific numbers** from your data — it's not guessing
 
-> ⚙️ **How the chatbot works**: The AI Assistant uses `SNOWFLAKE.CORTEX.COMPLETE` — the same LLM function you used in SQL (Step 2.5). Here, we give it context about your data (segment summaries, charity data, KPIs) as a system prompt, then pass the full conversation history so it can maintain context across turns. All of this runs inside Snowflake.
+> **How the chatbot works**: The AI Assistant uses `SNOWFLAKE.CORTEX.COMPLETE` — the same LLM function you used in SQL (Step 2.5). Here, we give it context about your data (segment summaries, charity data, KPIs) as a system prompt, then pass the full conversation history so it can maintain context across turns. All of this runs inside Snowflake.
 
 ---
 
-## 🤖 Module 5: Semantic View & Cortex Agent (15 min)
+<img src="https://img.shields.io/badge/Module_5-Semantic_View_&_Agent-E40421?style=flat-square" alt="Module 5">
 
-> 🎯 **Goal**: Create a business-friendly data model (Semantic View) and an AI agent that can answer natural language questions about your player data by automatically generating SQL.
+## Module 5 — Semantic View & Cortex Agent (15 min)
+
+> **Goal**: Create a business-friendly data model (Semantic View) and an AI agent that can answer natural language questions about your player data by automatically generating SQL.
 
 ### What is a Semantic View?
 
@@ -1371,7 +1383,7 @@ CREATE OR REPLACE SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VI
 
 You should see: `Statement executed successfully.`
 
-> 📘 **Snowflake Concept — Semantic View:**
+> **Snowflake Concept — Semantic View:**
 >
 > | Component | What it defines | Example |
 > |-----------|----------------|---------|
@@ -1457,7 +1469,7 @@ CREATE OR REPLACE AGENT POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_AGENT
 
 You should see: `Statement executed successfully.`
 
-> 📘 **Snowflake Concept — Cortex Agent:**
+> **Snowflake Concept — Cortex Agent:**
 >
 > The agent has three key parts:
 > - **Instructions**: Tell the AI how to behave and what business context it needs
@@ -1483,7 +1495,7 @@ You can test the agent directly from Snowsight:
 
 5. Notice how the agent generates SQL automatically — you can see the query it ran and the results
 
-> 🔄 **Compare this to the Streamlit chatbot** (Module 3, Tab 3): The Streamlit chatbot uses hardcoded data context — we manually pasted segment summaries and KPIs into the prompt. The Cortex Agent dynamically queries the actual database using your Semantic View. It can answer questions the Streamlit chatbot cannot, because it writes real SQL instead of relying on pre-loaded context.
+> **Compare this to the Streamlit chatbot** (Module 3, Tab 3): The Streamlit chatbot uses hardcoded data context — we manually pasted segment summaries and KPIs into the prompt. The Cortex Agent dynamically queries the actual database using your Semantic View. It can answer questions the Streamlit chatbot cannot, because it writes real SQL instead of relying on pre-loaded context.
 
 ### 5.5 What You Just Built
 
@@ -1512,7 +1524,9 @@ This is the same architecture that production Snowflake customers use to give bu
 
 ---
 
-## 🌟 Bonus Module: Cortex Code Challenge (for those who finish early)
+<img src="https://img.shields.io/badge/Bonus-Cortex_Code_Challenge-29B5E8?style=flat-square" alt="Bonus">
+
+## Bonus Module — Cortex Code Challenge (for those who finish early)
 
 **Finished the lab early?** Use Cortex Code to extend what you built.
 
@@ -1546,11 +1560,11 @@ Your instructor will guide you through accessing Cortex Code. The general workfl
 3. **Run** the code in Snowflake (Cortex Code can execute it directly)
 4. **Iterate** — ask for modifications or improvements
 
-> 💡 **The takeaway**: The SQL and Streamlit code you manually built in Modules 1-3 could also be generated this way. Cortex Code accelerates the development process from hours to minutes, while keeping you in control of the result.
+> **The takeaway**: The SQL and Streamlit code you manually built in Modules 1-3 could also be generated this way. Cortex Code accelerates the development process from hours to minutes, while keeping you in control of the result.
 
 ---
 
-## 🏆 Recap: What You Built
+## Recap — What You Built
 
 | | Component | Snowflake Technology | What it does |
 |:-:|-----------|---------------------|--------------|
@@ -1569,7 +1583,7 @@ Your instructor will guide you through accessing Cortex Code. The general workfl
 
 ---
 
-## 🧹 Cleanup (Optional)
+## Cleanup (Optional)
 
 To remove everything created in this lab:
 
