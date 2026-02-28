@@ -1450,8 +1450,8 @@ CREATE OR REPLACE AGENT POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_AGENT
 
   orchestration:
     budget:
-      seconds: 30
-      tokens: 16000
+      seconds: 60
+      tokens: 32000
 
   instructions:
     system: >
@@ -1459,6 +1459,7 @@ CREATE OR REPLACE AGENT POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_AGENT
       You help business users understand player data, segment performance, charity impact,
       and retention patterns. Always give specific numbers. When asked for recommendations,
       be actionable and reference the data.
+      Keep answers concise — 2-3 paragraphs maximum.
 
       Key business context:
       - Postcode Loterij is the largest charity lottery in the Netherlands
@@ -1490,6 +1491,9 @@ CREATE OR REPLACE AGENT POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_AGENT
   tool_resources:
     PlayerAnalyst:
       semantic_view: "POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW"
+      execution_environment:
+        type: "warehouse"
+        warehouse: "LOTERIJ_WH"
   $$;
 ```
 
@@ -1679,10 +1683,16 @@ with tab3:
         }
 
         response_text = ""
+        current_event = ""
         with requests.post(url, json=payload, headers=headers, stream=True) as r:
             r.raise_for_status()
-            for line in r.iter_lines(decode_unicode=True):
-                if not line:
+            for raw_line in r.iter_lines():
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8")
+                # Track the SSE event type
+                if line.startswith("event:"):
+                    current_event = line[len("event:"):].strip()
                     continue
                 if line.startswith("data: "):
                     data_str = line[len("data: "):]
@@ -1693,12 +1703,13 @@ with tab3:
                 data_str = data_str.strip()
                 if data_str == "[DONE]":
                     break
+                # Only capture the final response text, skip reasoning/thinking
+                if current_event not in ("response.text.delta", ""):
+                    continue
                 try:
                     event = json.loads(data_str)
-                    # Named agent endpoint format
                     if "text" in event:
                         response_text += event["text"]
-                    # Fallback: older delta.content format
                     elif "delta" in event:
                         delta = event["delta"]
                         for item in delta.get("content", []):
@@ -1718,6 +1729,12 @@ with tab3:
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
+    # Clear chat button (only show when there are messages)
+    if st.session_state.messages:
+        if st.button("Clear chat", key="clear_chat"):
+            st.session_state.messages = []
+            st.rerun()
 
     # Suggestion buttons (short labels)
     if not st.session_state.messages:
