@@ -100,6 +100,8 @@ postcode_loterij_lab/
 └── environment.yml           ← Module 3: Warehouse runtime dependencies (Conda)
 ```
 
+> **Note on `environment.yml` vs `requirements.txt`**: The lab uses two different dependency files at different stages. In Module 3, the Streamlit app runs on **warehouse runtime** (Conda-based), which uses `environment.yml`. In Module 5, the app is upgraded to **container runtime** (PyPI-based), which uses `requirements.txt`. Both files are included in this repo for reference. When following the lab guide, you'll switch from one to the other at the appropriate step.
+
 ## About Postcode Loterij
 
 The [Nationale Postcode Loterij](https://www.postcodeloterij.nl/) is one of the largest charity lotteries in the Netherlands. Players subscribe with their postcode, and 40% of ticket revenue goes to charity partners working on people and planet. This lab uses synthetic data inspired by that model.

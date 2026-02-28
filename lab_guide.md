@@ -610,7 +610,9 @@ LIMIT 3;
 
 ### 2.6 Build the PLAYER_INTELLIGENCE Table
 
-Now we combine the AI functions into one enriched table. **This runs on all 10,000 players and will take 2-5 minutes**:
+Now we combine the AI functions into one enriched table. **This runs on all 10,000 players and will take 2-5 minutes**.
+
+> **Note**: We include SENTIMENT, AI_CLASSIFY, and AI_EXTRACT in the table below, but *not* SUMMARIZE or COMPLETE. Why? Those two functions generate longer text output and are slower per row. Running them on 10,000 rows would take significantly longer. We demonstrated them on small samples in Steps 2.4 and 2.5 so you understand the capability — in production you would run them on targeted subsets (e.g., only churned players) rather than the full table.
 
 ```sql
 CREATE OR REPLACE TABLE POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE AS
@@ -805,7 +807,7 @@ dependencies:
 
 4. Click back on **`streamlit_app.py`** in the file list
 
-> **Why pin the version?** Streamlit in Snowflake uses a default Streamlit version that may not include newer features like `chat_input` and `chat_message` (needed for our AI chatbot). By pinning to `1.35.0`, we ensure all features work correctly.
+> **Why pin the version?** Pinning a specific Streamlit version ensures consistent behavior across all attendees and avoids compatibility surprises. In Module 5, we will switch from warehouse runtime (Conda) to container runtime (PyPI), which uses a different dependency file — pinning here keeps the initial setup clean and predictable.
 
 ### 3.3 Paste the Dashboard Code
 
@@ -845,6 +847,7 @@ PL_BLUE = "#0069B4"
 # -- Custom CSS for Postcode Loterij branding --
 st.markdown(f"""
 <style>
+    /* Header banner */
     .pl-header {{
         margin-bottom: 1rem;
         border-radius: 12px;
@@ -856,6 +859,8 @@ st.markdown(f"""
         height: auto;
         border-radius: 12px;
     }}
+
+    /* KPI cards */
     div[data-testid="stMetric"] {{
         background: white;
         border: 1px solid #f0f0f0;
@@ -867,15 +872,34 @@ st.markdown(f"""
     div[data-testid="stMetric"] label {{
         color: #666 !important;
         font-size: 0.85rem !important;
+        font-weight: 500 !important;
+    }}
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {{
+        color: #1a1a1a !important;
+        font-weight: 700 !important;
+    }}
+
+    /* Tab styling */
+    button[data-baseweb="tab"] {{
+        font-weight: 600 !important;
+        font-size: 1rem !important;
     }}
     button[data-baseweb="tab"][aria-selected="true"] {{
         color: {PL_RED} !important;
         border-bottom-color: {PL_RED} !important;
     }}
+
+    /* Primary buttons */
     .stButton > button[kind="primary"] {{
         background-color: {PL_RED} !important;
         border-color: {PL_RED} !important;
     }}
+    .stButton > button[kind="primary"]:hover {{
+        background-color: {PL_DARK_RED} !important;
+        border-color: {PL_DARK_RED} !important;
+    }}
+
+    /* Winner reveal */
     .winner-reveal {{
         background: linear-gradient(135deg, {PL_RED} 0%, {PL_ORANGE} 100%);
         color: white;
@@ -885,7 +909,15 @@ st.markdown(f"""
         font-size: 2rem;
         font-weight: 800;
         margin: 1rem 0;
+        animation: pulse 0.5s ease-in-out;
     }}
+    @keyframes pulse {{
+        0% {{ transform: scale(0.95); opacity: 0.8; }}
+        50% {{ transform: scale(1.02); }}
+        100% {{ transform: scale(1); opacity: 1; }}
+    }}
+
+    /* Spinning animation */
     .spinning-postcode {{
         background: #f8f9fa;
         border: 2px dashed {PL_RED};
@@ -896,12 +928,38 @@ st.markdown(f"""
         font-weight: 700;
         color: {PL_RED};
     }}
+
+    /* Charity highlight */
     .charity-banner {{
         background: linear-gradient(135deg, {PL_GREEN} 0%, #1a8a2e 100%);
         color: white;
         padding: 1rem 1.5rem;
         border-radius: 8px;
         margin: 0.5rem 0;
+        font-size: 1rem;
+    }}
+
+    /* Section headers */
+    h3, h2 {{
+        color: #1a1a1a !important;
+    }}
+
+    /* Suggestion buttons in chat */
+    .suggestion-btn {{
+        display: inline-block;
+        background: white;
+        border: 2px solid {PL_RED};
+        color: {PL_RED};
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        margin: 0.3rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }}
+    .suggestion-btn:hover {{
+        background: {PL_RED};
+        color: white;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -1035,6 +1093,8 @@ tab1, tab2, tab3 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant"])
 # TAB 1: PLAYER DASHBOARD
 # ============================================================
 with tab1:
+
+    # KPIs
     kpi_df = session.sql("""
         SELECT
             COUNT(*) AS TOTAL_PLAYERS,
@@ -1062,7 +1122,9 @@ with tab1:
 
     st.markdown("---")
 
+    # Charts row 1
     col1, col2 = st.columns(2)
+
     with col1:
         st.subheader("Players by Segment")
         seg_df = session.sql("""
@@ -1077,17 +1139,21 @@ with tab1:
         city_df = session.sql("""
             SELECT CITY, COUNT(*) AS PLAYER_COUNT
             FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
-            GROUP BY CITY ORDER BY PLAYER_COUNT DESC
+            GROUP BY CITY
+            ORDER BY PLAYER_COUNT DESC
         """).to_pandas()
         st.bar_chart(city_df, x="CITY", y="PLAYER_COUNT", color=PL_BLUE)
 
+    # Charts row 2
     col3, col4 = st.columns(2)
+
     with col3:
         st.subheader("Acquisition Channels")
         ch_df = session.sql("""
             SELECT ACQUISITION_CHANNEL, COUNT(*) AS PLAYERS
             FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
-            GROUP BY ACQUISITION_CHANNEL ORDER BY PLAYERS DESC
+            GROUP BY ACQUISITION_CHANNEL
+            ORDER BY PLAYERS DESC
         """).to_pandas()
         st.bar_chart(ch_df, x="ACQUISITION_CHANNEL", y="PLAYERS", color=PL_ORANGE)
 
@@ -1100,22 +1166,33 @@ with tab1:
         """).to_pandas()
         st.bar_chart(sent_seg_df, x="SEGMENT", y="AVG_SENTIMENT", color=PL_GREEN)
 
+    # Segment detail table
     st.subheader("Segment Intelligence")
     seg_detail = session.sql("""
-        SELECT SEGMENT, PLAYER_COUNT, AVG_MONTHLY_SPEND, AVG_SENTIMENT,
-            AVG_TENURE AS AVG_TENURE_MONTHS, TOTAL_LTV, TOTAL_CHARITY_IMPACT
+        SELECT
+            SEGMENT,
+            PLAYER_COUNT,
+            AVG_MONTHLY_SPEND,
+            AVG_SENTIMENT,
+            AVG_TENURE AS AVG_TENURE_MONTHS,
+            TOTAL_LTV,
+            TOTAL_CHARITY_IMPACT
         FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY
         ORDER BY PLAYER_COUNT DESC
     """).to_pandas()
     st.dataframe(seg_detail, use_container_width=True)
 
+    # Charity impact
     st.subheader("Charity Impact by Category")
-    st.markdown('<div class="charity-banner">40% of every ticket sold goes directly to charity partners — over 150 organizations supported</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="charity-banner">40% of every ticket sold goes directly to charity partners — over 150 organizations supported</div>', unsafe_allow_html=True)
     charity_cat = session.sql("""
-        SELECT CATEGORY, COUNT(DISTINCT CHARITY_NAME) AS CHARITIES,
+        SELECT
+            CATEGORY,
+            COUNT(DISTINCT CHARITY_NAME) AS CHARITIES,
             ROUND(SUM(TOTAL_RECEIVED), 0) AS TOTAL_DONATED
         FROM POSTCODE_LOTERIJ_AI.ANALYTICS.CHARITY_IMPACT
-        GROUP BY CATEGORY ORDER BY TOTAL_DONATED DESC
+        GROUP BY CATEGORY
+        ORDER BY TOTAL_DONATED DESC
     """).to_pandas()
     st.bar_chart(charity_cat, x="CATEGORY", y="TOTAL_DONATED", color=PL_GREEN)
 
@@ -1124,21 +1201,29 @@ with tab1:
 # TAB 2: WINNER DRAFT
 # ============================================================
 with tab2:
+
     st.subheader("Draft a Winner!")
     st.write("Select a draw and watch as we pick the winning postcode. Neighbours win together!")
 
+    # Get available draws
     draws_df = session.sql("""
-        SELECT DRAW_ID, DRAW_DATE, PRIZE_TYPE, TOTAL_PRIZE_POOL, WINNING_POSTCODE
-        FROM POSTCODE_LOTERIJ_AI.RAW.DRAWS ORDER BY DRAW_DATE DESC
+        SELECT DRAW_ID, DRAW_DATE, PRIZE_TYPE,
+               TOTAL_PRIZE_POOL, WINNING_POSTCODE
+        FROM POSTCODE_LOTERIJ_AI.RAW.DRAWS
+        ORDER BY DRAW_DATE DESC
     """).to_pandas()
 
+    # Select draw
     draw_options = draws_df.apply(
         lambda r: f"Draw {r['DRAW_ID']} \u2014 {r['DRAW_DATE']} \u2014 {r['PRIZE_TYPE']} (\u20ac{int(r['TOTAL_PRIZE_POOL']):,})",
-        axis=1).tolist()
+        axis=1
+    ).tolist()
     selected_draw_idx = st.selectbox("Select a draw", range(len(draw_options)),
                                       format_func=lambda i: draw_options[i])
+
     selected_draw = draws_df.iloc[selected_draw_idx]
 
+    # Show draw info
     d1, d2, d3 = st.columns(3)
     d1.metric("Prize Type", selected_draw["PRIZE_TYPE"])
     d2.metric("Prize Pool", f"\u20ac{int(selected_draw['TOTAL_PRIZE_POOL']):,}")
@@ -1146,26 +1231,43 @@ with tab2:
 
     st.markdown("---")
 
+    # Draft button
     if st.button("Draft Winner!", type="primary"):
+
+        # Get all active postcodes
         postcodes_df = session.sql("""
-            SELECT DISTINCT POSTCODE, CITY FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
+            SELECT DISTINCT POSTCODE, CITY
+            FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
             WHERE STATUS = 'Active'
         """).to_pandas()
 
+        # Animated spinning effect
         placeholder = st.empty()
         postcode_list = postcodes_df["POSTCODE"].tolist()
+
         for i in range(20):
             rand_pc = random.choice(postcode_list)
-            placeholder.markdown(f'<div class="spinning-postcode">{rand_pc}</div>', unsafe_allow_html=True)
+            placeholder.markdown(
+                f'<div class="spinning-postcode">{rand_pc}</div>',
+                unsafe_allow_html=True
+            )
             time.sleep(0.1 + i * 0.02)
 
+        # Reveal the winning postcode
         winning_pc = selected_draw["WINNING_POSTCODE"]
         placeholder.empty()
-        st.balloons()
-        st.markdown(f'<div class="winner-reveal">Winning Postcode: {winning_pc}</div>', unsafe_allow_html=True)
 
+        st.balloons()
+        st.markdown(
+            f'<div class="winner-reveal">Winning Postcode: {winning_pc}</div>',
+            unsafe_allow_html=True
+        )
+
+        # Show winners in that postcode
         winners_df = session.sql(f"""
-            SELECT PLAYER_NAME, POSTCODE, CITY, TICKET_TYPE, MONTHLY_SPEND, TENURE_MONTHS, STATUS
+            SELECT
+                PLAYER_NAME, POSTCODE, CITY, TICKET_TYPE, MONTHLY_SPEND,
+                TENURE_MONTHS, STATUS
             FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
             WHERE POSTCODE = '{winning_pc}' AND STATUS = 'Active'
         """).to_pandas()
@@ -1176,7 +1278,8 @@ with tab2:
         w1, w2, w3 = st.columns(3)
         w1.metric("Winners in Postcode", num_winners)
         w2.metric("Prize per Winner", f"\u20ac{prize_per_winner:,}")
-        w3.metric("Winning City", winners_df["CITY"].iloc[0] if not winners_df.empty else "N/A")
+        w3.metric("Winning City",
+                   winners_df["CITY"].iloc[0] if not winners_df.empty else "N/A")
 
         if not winners_df.empty:
             st.subheader("Congratulations to:")
@@ -1184,14 +1287,21 @@ with tab2:
         else:
             st.info("No active players found in this postcode for this draw.")
 
+        # Show charity beneficiaries from this draw
         st.markdown("---")
         st.subheader("Charities supported by this draw")
-        st.markdown('<div class="charity-banner">Every draw directly funds charity partners. Here are the top beneficiaries:</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="charity-banner">Every draw directly funds charity partners. Here are the top beneficiaries:</div>',
+            unsafe_allow_html=True
+        )
         charity_draw = session.sql(f"""
-            SELECT CHARITY_NAME, CATEGORY, ROUND(DONATION_AMOUNT, 2) AS DONATED
+            SELECT
+                CHARITY_NAME, CATEGORY,
+                ROUND(DONATION_AMOUNT, 2) AS DONATED
             FROM POSTCODE_LOTERIJ_AI.RAW.DONATIONS
             WHERE DRAW_ID = {selected_draw['DRAW_ID']}
-            ORDER BY DONATED DESC LIMIT 10
+            ORDER BY DONATED DESC
+            LIMIT 10
         """).to_pandas()
         st.dataframe(charity_draw, use_container_width=True)
 
