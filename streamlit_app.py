@@ -27,42 +27,15 @@ st.markdown(f"""
 <style>
     /* Header banner */
     .pl-header {{
-        background: linear-gradient(135deg, {PL_RED} 0%, {PL_DARK_RED} 100%);
-        color: white;
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
         margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 1.2rem;
+        border-radius: 12px;
+        overflow: hidden;
+        line-height: 0;
     }}
-    .pl-logo {{
-        font-size: 2.8rem;
-        font-weight: 900;
-        line-height: 1;
-        letter-spacing: -2px;
-    }}
-    .pl-logo .heart {{
-        display: inline-block;
-        color: white;
-        background: rgba(255,255,255,0.2);
-        border-radius: 50%;
-        width: 52px;
-        height: 52px;
-        text-align: center;
-        line-height: 52px;
-        font-size: 1.6rem;
-        margin-right: 4px;
-    }}
-    .pl-header-text h1 {{
-        margin: 0;
-        font-size: 1.8rem;
-        font-weight: 700;
-    }}
-    .pl-header-text p {{
-        margin: 0.2rem 0 0 0;
-        font-size: 0.95rem;
-        opacity: 0.9;
+    .pl-header svg {{
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
     }}
 
     /* KPI cards */
@@ -169,16 +142,134 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# -- Branded Header --
+# -- Branded Header (inline SVG — no external files needed) --
 st.markdown("""
 <div class="pl-header">
-    <div class="pl-logo">
-        <span class="heart">PL</span>
-    </div>
-    <div class="pl-header-text">
-        <h1>Postcode Loterij — Player Intelligence</h1>
-        <p>AI-powered analytics dashboard built entirely on Snowflake</p>
-    </div>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1628;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#0a1628;stop-opacity:0.95"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Night sky -->
+  <rect width="900" height="200" fill="url(#sky)"/>
+
+  <!-- Stars -->
+  <circle cx="50" cy="20" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="150" cy="35" r="1" fill="white" opacity="0.5"/>
+  <circle cx="280" cy="14" r="1.5" fill="white" opacity="0.6"/>
+  <circle cx="550" cy="10" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="680" cy="30" r="1" fill="white" opacity="0.5"/>
+  <circle cx="780" cy="16" r="1.5" fill="white" opacity="0.6"/>
+  <circle cx="850" cy="38" r="1" fill="white" opacity="0.4"/>
+
+  <!-- Canal water -->
+  <rect x="0" y="155" width="900" height="45" fill="url(#water)"/>
+  <line x1="30" y1="168" x2="70" y2="168" stroke="white" stroke-width="0.5" opacity="0.15"/>
+  <line x1="150" y1="178" x2="200" y2="178" stroke="white" stroke-width="0.5" opacity="0.1"/>
+  <line x1="300" y1="170" x2="360" y2="170" stroke="white" stroke-width="0.5" opacity="0.12"/>
+
+  <!-- Canal edge -->
+  <rect x="0" y="150" width="900" height="6" rx="2" fill="#2a2a3e" opacity="0.8"/>
+
+  <!-- House 1 — Red -->
+  <rect x="20" y="75" width="55" height="78" fill="#E40421"/>
+  <polygon points="22,75 47,48 75,75" fill="#B8031A"/>
+  <rect x="32" y="88" width="12" height="14" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="52" y="88" width="12" height="14" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="32" y="112" width="12" height="14" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="52" y="112" width="12" height="14" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="40" y="130" width="16" height="23" rx="1" fill="#8B4513"/>
+
+  <!-- House 2 — Orange -->
+  <rect x="80" y="68" width="50" height="85" fill="#F39200"/>
+  <rect x="80" y="68" width="50" height="7" fill="#D47E00"/>
+  <polygon points="82,68 105,44 128,68" fill="#D47E00"/>
+  <rect x="90" y="82" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="108" y="82" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.8"/>
+  <rect x="90" y="104" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="108" y="104" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="97" y="128" width="14" height="25" rx="1" fill="#8B4513"/>
+
+  <!-- House 3 — Dark red (stepped gable) -->
+  <rect x="135" y="62" width="58" height="91" fill="#8B2500"/>
+  <rect x="145" y="54" width="38" height="8" fill="#8B2500"/>
+  <rect x="150" y="46" width="28" height="8" fill="#8B2500"/>
+  <rect x="155" y="38" width="18" height="8" fill="#8B2500"/>
+  <rect x="147" y="78" width="11" height="13" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="168" y="78" width="11" height="13" rx="1" fill="#FFE4B5" opacity="0.8"/>
+  <rect x="147" y="102" width="11" height="13" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="168" y="102" width="11" height="13" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="155" y="125" width="16" height="28" rx="1" fill="#6B3000"/>
+
+  <!-- House 4 — Blue -->
+  <rect x="198" y="72" width="48" height="81" fill="#0069B4"/>
+  <polygon points="200,72 222,46 244,72" fill="#005A9C"/>
+  <rect x="207" y="85" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.8"/>
+  <rect x="227" y="85" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="207" y="108" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="227" y="108" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="214" y="128" width="14" height="25" rx="1" fill="#8B4513"/>
+
+  <!-- House 5 — Green -->
+  <rect x="250" y="66" width="52" height="87" fill="#23A638"/>
+  <rect x="250" y="66" width="52" height="5" fill="#1D8C2F"/>
+  <polygon points="252,66 276,42 300,66" fill="#1D8C2F"/>
+  <rect x="260" y="80" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="280" y="80" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.8"/>
+  <rect x="260" y="104" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="280" y="104" width="10" height="12" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="268" y="128" width="14" height="25" rx="1" fill="#8B4513"/>
+
+  <!-- House 6 — Red -->
+  <rect x="307" y="70" width="45" height="83" fill="#E40421"/>
+  <polygon points="309,70 329,48 350,70" fill="#B8031A"/>
+  <rect x="315" y="84" width="9" height="11" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="333" y="84" width="9" height="11" rx="1" fill="#FFE4B5" opacity="0.8"/>
+  <rect x="315" y="106" width="9" height="11" rx="1" fill="#FFE4B5" opacity="0.7"/>
+  <rect x="333" y="106" width="9" height="11" rx="1" fill="#FFE4B5" opacity="0.9"/>
+  <rect x="322" y="130" width="12" height="23" rx="1" fill="#8B4513"/>
+
+  <!-- Confetti -->
+  <rect x="100" y="22" width="4" height="7" rx="1" fill="#F39200" opacity="0.8" transform="rotate(25 102 26)"/>
+  <rect x="180" y="32" width="4" height="7" rx="1" fill="#E40421" opacity="0.7" transform="rotate(-15 182 36)"/>
+  <rect x="260" y="18" width="4" height="7" rx="1" fill="#23A638" opacity="0.8" transform="rotate(40 262 22)"/>
+  <rect x="60" y="36" width="4" height="7" rx="1" fill="#0069B4" opacity="0.6" transform="rotate(-30 62 40)"/>
+  <circle cx="140" cy="28" r="3" fill="#E40421" opacity="0.6"/>
+  <circle cx="230" cy="40" r="2.5" fill="#F39200" opacity="0.5"/>
+  <circle cx="300" cy="24" r="3" fill="#23A638" opacity="0.6"/>
+
+  <!-- PL Logo — red circle with white text -->
+  <circle cx="420" cy="62" r="28" fill="#E40421"/>
+  <circle cx="420" cy="62" r="26" fill="none" stroke="white" stroke-width="1.5" opacity="0.3"/>
+  <text x="420" y="70" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">PL</text>
+
+  <!-- Title -->
+  <text x="465" y="55" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="bold" fill="white" letter-spacing="0.5">Postcode Loterij</text>
+  <text x="465" y="80" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="white" opacity="0.75">Player Intelligence</text>
+
+  <!-- Divider line -->
+  <line x1="465" y1="90" x2="720" y2="90" stroke="#E40421" stroke-width="2" opacity="0.5"/>
+
+  <!-- Subtitle -->
+  <text x="465" y="110" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="white" opacity="0.6">AI-powered analytics built entirely on Snowflake</text>
+
+  <!-- Snowflake icon -->
+  <g transform="translate(448, 104)" fill="white" opacity="0.5">
+    <line x1="0" y1="-5" x2="0" y2="5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="-4.3" y1="-2.5" x2="4.3" y2="2.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="-4.3" y1="2.5" x2="4.3" y2="-2.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Bottom gradient bar -->
+  <rect x="0" y="194" width="900" height="6" fill="#E40421" opacity="0.8"/>
+</svg>
 </div>
 """, unsafe_allow_html=True)
 
