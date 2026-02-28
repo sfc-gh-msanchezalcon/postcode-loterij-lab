@@ -1,3 +1,5 @@
+<img src="assets/border.svg" width="100%">
+
 <p align="center">
   <img src="assets/banner.svg" alt="Postcode Loterij AI Lab" width="100%">
 </p>
@@ -14,7 +16,7 @@
   <img src="https://img.shields.io/badge/Platform-Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white" alt="Platform: Snowflake">
 </p>
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 ## What You Will Build
 
@@ -58,7 +60,7 @@ By the end you will have:
     └─────────────────────────────────────────────────────┘
 ```
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 ## Lab Agenda
 
@@ -72,7 +74,7 @@ By the end you will have:
 | 5 | **Semantic View & Cortex Agent** | 15 min |
 | + | **Bonus** — Cortex Code Challenge | 15 min |
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_0-Environment_Setup-E40421?style=flat-square" alt="Module 0">
 
@@ -115,7 +117,7 @@ You should see `Statement executed successfully.` for each.
 
 > **Why cross-region?** Snowflake Cortex AI functions (like sentiment analysis or LLM calls) run on specialized AI infrastructure hosted in specific cloud regions. If your Snowflake account is in a region without AI infrastructure, this setting allows your requests to be securely routed to the nearest available region. Your data stays encrypted in transit.
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_1-Foundation_Setup-E40421?style=flat-square" alt="Module 1">
 
@@ -455,7 +457,7 @@ FROM POSTCODE_LOTERIJ_AI.RAW.DONATIONS
 GROUP BY CATEGORY ORDER BY TOTAL_DONATED DESC;
 ```
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_2-AI_Enrichment-E40421?style=flat-square" alt="Module 2">
 
@@ -730,7 +732,7 @@ SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY ORDER BY PLAYER_COUN
 >
 > If you see segment names with extra JSON formatting, make sure you used the `PLAYER_SEGMENT_JSON:labels[0]::VARCHAR` syntax in the view (Step 2.7).
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_3-Streamlit_Dashboard-E40421?style=flat-square" alt="Module 3">
 
@@ -1203,7 +1205,7 @@ You should see:
 > - `st.cache_data(ttl=600)` — caches query results for 10 minutes to improve performance
 > - `st.session_state` — preserves data (like chat history) between user interactions
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_4-Explore_the_App-E40421?style=flat-square" alt="Module 4">
 
@@ -1247,7 +1249,7 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 
 > **How the chatbot works**: The AI Assistant uses `SNOWFLAKE.CORTEX.COMPLETE` — the same LLM function you used in SQL (Step 2.5). Here, we give it context about your data (segment summaries, charity data, KPIs) as a system prompt, then pass the full conversation history so it can maintain context across turns. All of this runs inside Snowflake.
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_5-Semantic_View_&_Agent-E40421?style=flat-square" alt="Module 5">
 
@@ -1522,7 +1524,7 @@ Natural language question
 
 This is the same architecture that production Snowflake customers use to give business users self-service analytics without writing SQL.
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Bonus-Cortex_Code_Challenge-29B5E8?style=flat-square" alt="Bonus">
 
@@ -1562,7 +1564,7 @@ Your instructor will guide you through accessing Cortex Code. The general workfl
 
 > **The takeaway**: The SQL and Streamlit code you manually built in Modules 1-3 could also be generated this way. Cortex Code accelerates the development process from hours to minutes, while keeping you in control of the result.
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 ## Recap — What You Built
 
@@ -1581,7 +1583,7 @@ Your instructor will guide you through accessing Cortex Code. The general workfl
 
 **🔒 Everything ran inside Snowflake.** No external APIs. No additional tools. No data left your account.
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 ## Cleanup (Optional)
 
@@ -1592,7 +1594,7 @@ DROP DATABASE IF EXISTS POSTCODE_LOTERIJ_AI;
 DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
 ```
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 ## Additional Resources
 
@@ -1607,6 +1609,8 @@ DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
 - [CORTEX.COMPLETE Function Reference](https://docs.snowflake.com/en/sql-reference/functions/complete-snowflake-cortex)
 - [CORTEX.SENTIMENT Function Reference](https://docs.snowflake.com/en/sql-reference/functions/sentiment-snowflake-cortex)
 
----
+<p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 *Lab designed for Postcode Loterij by the Snowflake team.*
+
+<img src="assets/border.svg" width="100%">
