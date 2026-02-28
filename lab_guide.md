@@ -1000,9 +1000,9 @@ st.markdown("""
 <!-- HTML text overlay (Streamlit strips SVG <text> elements) -->
 <div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
   <div style="position:absolute;top:31%;left:46.7%;transform:translate(-50%,-50%);font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,1.6vw,22px);font-weight:bold;color:white;line-height:1;">PL</div>
-  <div style="position:absolute;top:18%;left:51%;font-family:Georgia,'Times New Roman',serif;font-size:clamp(14px,2.1vw,28px);font-weight:bold;color:white;letter-spacing:0.5px;white-space:nowrap;">Postcode Loterij</div>
-  <div style="position:absolute;top:33%;left:51%;font-family:Arial,Helvetica,sans-serif;font-size:clamp(9px,1.2vw,16px);color:white;opacity:0.75;white-space:nowrap;">Player Intelligence</div>
-  <div style="position:absolute;top:48%;left:51%;font-family:Arial,Helvetica,sans-serif;font-size:clamp(7px,1vw,13px);color:white;opacity:0.6;white-space:nowrap;">AI-powered analytics built entirely on Snowflake</div>
+  <div style="position:absolute;top:20%;left:51.5%;font-family:Georgia,'Times New Roman',serif;font-size:clamp(14px,2.1vw,28px);font-weight:bold;color:white;letter-spacing:0.5px;white-space:nowrap;">Postcode Loterij</div>
+  <div style="position:absolute;top:34%;left:51.5%;font-family:Arial,Helvetica,sans-serif;font-size:clamp(9px,1.2vw,16px);color:white;opacity:0.75;white-space:nowrap;">Player Intelligence</div>
+  <div style="position:absolute;top:53%;left:51.5%;font-family:Arial,Helvetica,sans-serif;font-size:clamp(7px,1vw,13px);color:white;opacity:0.6;white-space:nowrap;">AI-powered analytics built entirely on Snowflake</div>
 </div>
 </div>
 """, unsafe_allow_html=True)
