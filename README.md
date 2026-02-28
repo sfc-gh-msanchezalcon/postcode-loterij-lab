@@ -57,6 +57,7 @@ A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution
 | **Streamlit in Snowflake** | Build interactive dashboards without leaving Snowflake | 3 |
 | **Semantic View** | Define business meaning of tables (dimensions, facts, metrics) for AI | 5 |
 | **Cortex Agent** | AI orchestrator that converts natural language to SQL via your Semantic View | 5 |
+| **Container Runtime** | Run Streamlit on a compute pool with REST API access (SPCS) | 5 |
 
 ## Prerequisites
 
@@ -72,7 +73,7 @@ A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution
 | 2 | AI Enrichment with Cortex AI Functions | 25 min |
 | 3 | Build Streamlit Dashboard | 20 min |
 | 4 | Explore & Interact with the App | 10 min |
-| 5 | Semantic View & Cortex Agent | 15 min |
+| 5 | Semantic View & Cortex Agent | 20 min |
 | **Bonus** | **Cortex Code Challenge** | **15 min** |
 
 ## Getting Started
@@ -94,8 +95,9 @@ postcode_loterij_lab/
 ├── scripts/
 │   ├── 01_setup.sql          ← Module 1: Database, tables, synthetic data
 │   └── 02_ai_enrichment.sql  ← Module 2: Cortex AI enrichment pipeline
-├── streamlit_app.py          ← Module 3: Branded Streamlit dashboard
-└── environment.yml           ← Streamlit dependency pinning
+├── streamlit_app.py          ← Module 3/5: Branded Streamlit dashboard with Cortex Agent
+├── requirements.txt          ← Module 5: Container runtime dependencies (PyPI)
+└── environment.yml           ← Module 3: Warehouse runtime dependencies (Conda)
 ```
 
 ## About Postcode Loterij

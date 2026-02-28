@@ -170,9 +170,9 @@ players_raw AS (
             WHEN 1 THEN 'I love playing with my neighbours, it makes winning so much more fun!'
             WHEN 2 THEN 'The charity donations are why I keep playing. Knowing I help nature conservation is important to me.'
             WHEN 3 THEN 'Disappointed that my street never wins. Considering cancelling my subscription.'
-            WHEN 4 THEN 'The PostcodeKanjer draw on New Years is the highlight of my year!'
+            WHEN 4 THEN 'The Postcode Kanjer draw on New Years is the highlight of my year!'
             WHEN 5 THEN 'Too expensive for what you get. The prizes seem to always go to the same areas.'
-            WHEN 6 THEN 'Great concept! I signed up after seeing the TV show with the StreetPrize.'
+            WHEN 6 THEN 'Great concept! I signed up after seeing the TV show with the Street Prize.'
             WHEN 7 THEN 'Been playing for 10 years. The charity impact reports are wonderful to read.'
             WHEN 8 THEN 'I think the door-to-door sales tactics are too aggressive. But I like the lottery itself.'
             WHEN 9 THEN 'My neighbour won last month and shared the celebration with the whole street. Amazing community feeling!'
@@ -213,30 +213,35 @@ WITH draw_dates AS (
         DATEADD('month', -SEQ4(), DATE_TRUNC('month', CURRENT_DATE())) AS DRAW_DATE,
         CASE
             WHEN MONTH(DATEADD('month', -SEQ4(), DATE_TRUNC('month', CURRENT_DATE()))) = 1
-            THEN 'PostcodeKanjer'
-            WHEN UNIFORM(1, 4, RANDOM()) = 1 THEN 'StreetPrize'
-            ELSE 'MonthlyPrize'
+            THEN 'Postcode Kanjer'
+            WHEN UNIFORM(1, 4, RANDOM()) = 1 THEN 'Street Prize'
+            ELSE 'Monthly Prize'
         END AS PRIZE_TYPE,
         CASE
             WHEN MONTH(DATEADD('month', -SEQ4(), DATE_TRUNC('month', CURRENT_DATE()))) = 1
-            THEN UNIFORM(50000000, 76900000, RANDOM())  -- PostcodeKanjer: €50M-€76.9M
+            THEN UNIFORM(50000000, 76900000, RANDOM())  -- Postcode Kanjer: €50M-€76.9M
             WHEN UNIFORM(1, 4, RANDOM()) = 1
-            THEN UNIFORM(250000, 1000000, RANDOM())      -- StreetPrize: €250K-€1M
-            ELSE UNIFORM(25000, 150000, RANDOM())         -- MonthlyPrize: €25K-€150K
+            THEN UNIFORM(250000, 1000000, RANDOM())      -- Street Prize: €250K-€1M
+            ELSE UNIFORM(25000, 150000, RANDOM())         -- Monthly Prize: €25K-€150K
         END AS TOTAL_PRIZE_POOL
     FROM TABLE(GENERATOR(ROWCOUNT => 24))
+),
+-- Pick a different random winning postcode for each draw
+random_postcodes AS (
+    SELECT
+        POSTCODE,
+        ROW_NUMBER() OVER (ORDER BY RANDOM()) AS rn
+    FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
+    WHERE STATUS = 'Active'
 )
 SELECT
     DRAW_ID,
     DRAW_DATE,
     PRIZE_TYPE,
     TOTAL_PRIZE_POOL,
-    -- Pick a winning postcode from our player pool
-    (SELECT POSTCODE FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
-     WHERE STATUS = 'Active'
-     ORDER BY RANDOM()
-     LIMIT 1) AS WINNING_POSTCODE
-FROM draw_dates;
+    rp.POSTCODE AS WINNING_POSTCODE
+FROM draw_dates dd
+JOIN random_postcodes rp ON rp.rn = dd.DRAW_ID;
 
 -- ============================================================
 -- 7. TICKETS TABLE

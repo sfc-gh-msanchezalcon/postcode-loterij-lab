@@ -71,7 +71,7 @@ By the end you will have:
 | 2 | **AI Enrichment** — Cortex AI Functions | 25 min |
 | 3 | **Streamlit Dashboard** — Build & Deploy | 20 min |
 | 4 | **Explore** — Interact with the App | 10 min |
-| 5 | **Semantic View & Cortex Agent** | 15 min |
+| 5 | **Semantic View & Cortex Agent** | 20 min |
 | + | **Bonus** — Cortex Code Challenge | 15 min |
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
@@ -295,9 +295,9 @@ players_raw AS (
             WHEN 1 THEN 'I love playing with my neighbours, it makes winning so much more fun!'
             WHEN 2 THEN 'The charity donations are why I keep playing. Knowing I help nature conservation is important to me.'
             WHEN 3 THEN 'Disappointed that my street never wins. Considering cancelling my subscription.'
-            WHEN 4 THEN 'The PostcodeKanjer draw on New Years is the highlight of my year!'
+            WHEN 4 THEN 'The Postcode Kanjer draw on New Years is the highlight of my year!'
             WHEN 5 THEN 'Too expensive for what you get. The prizes seem to always go to the same areas.'
-            WHEN 6 THEN 'Great concept! I signed up after seeing the TV show with the StreetPrize.'
+            WHEN 6 THEN 'Great concept! I signed up after seeing the TV show with the Street Prize.'
             WHEN 7 THEN 'Been playing for 10 years. The charity impact reports are wonderful to read.'
             WHEN 8 THEN 'I think the door-to-door sales tactics are too aggressive. But I like the lottery itself.'
             WHEN 9 THEN 'My neighbour won last month and shared the celebration with the whole street. Amazing community feeling!'
@@ -347,9 +347,9 @@ WITH draw_dates AS (
         DATEADD('month', -SEQ4(), DATE_TRUNC('month', CURRENT_DATE())) AS DRAW_DATE,
         CASE
             WHEN MONTH(DATEADD('month', -SEQ4(), DATE_TRUNC('month', CURRENT_DATE()))) = 1
-            THEN 'PostcodeKanjer'
-            WHEN UNIFORM(1, 4, RANDOM()) = 1 THEN 'StreetPrize'
-            ELSE 'MonthlyPrize'
+            THEN 'Postcode Kanjer'
+            WHEN UNIFORM(1, 4, RANDOM()) = 1 THEN 'Street Prize'
+            ELSE 'Monthly Prize'
         END AS PRIZE_TYPE,
         CASE
             WHEN MONTH(DATEADD('month', -SEQ4(), DATE_TRUNC('month', CURRENT_DATE()))) = 1
@@ -359,12 +359,16 @@ WITH draw_dates AS (
             ELSE UNIFORM(25000, 150000, RANDOM())
         END AS TOTAL_PRIZE_POOL
     FROM TABLE(GENERATOR(ROWCOUNT => 24))
+),
+random_postcodes AS (
+    SELECT POSTCODE, ROW_NUMBER() OVER (ORDER BY RANDOM()) AS rn
+    FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS WHERE STATUS = 'Active'
 )
 SELECT
     DRAW_ID, DRAW_DATE, PRIZE_TYPE, TOTAL_PRIZE_POOL,
-    (SELECT POSTCODE FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
-     WHERE STATUS = 'Active' ORDER BY RANDOM() LIMIT 1) AS WINNING_POSTCODE
-FROM draw_dates;
+    rp.POSTCODE AS WINNING_POSTCODE
+FROM draw_dates dd
+JOIN random_postcodes rp ON rp.rn = dd.DRAW_ID;
 ```
 
 ```sql
@@ -433,6 +437,15 @@ ORDER BY TABLE_NAME;
 | TICKETS    | ~100,000-120,000 |
 
 > **Checkpoint**: If your PLAYERS count is 10,000 and all other tables have data, you are on track. The exact TICKETS count varies because we randomly sampled ~60% participation per draw.
+>
+> **Troubleshooting**:
+>
+> | Problem | Fix |
+> |---------|-----|
+> | `Object does not exist` or `Table not found` | Make sure you ran `USE SCHEMA POSTCODE_LOTERIJ_AI.RAW;` from Step 1.1 |
+> | PLAYERS shows 0 rows | Re-run the Players query from Step 1.3 — make sure you selected the full query before pressing Run |
+> | TICKETS shows 0 rows | Re-run Step 1.4 — the TICKETS query depends on PLAYERS and DRAWS existing first |
+> | `Warehouse does not exist` | Run `USE WAREHOUSE LOTERIJ_WH;` — you may have skipped Step 1.1 |
 
 ### 1.6 Explore Your Data (Optional)
 
@@ -731,6 +744,16 @@ SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY ORDER BY PLAYER_COUN
 > - The SEGMENT_SUMMARY view shows 6 segments with clean names like "High-Value Loyal", "At-Risk", etc.
 >
 > If you see segment names with extra JSON formatting, make sure you used the `PLAYER_SEGMENT_JSON:labels[0]::VARCHAR` syntax in the view (Step 2.7).
+>
+> **Troubleshooting**:
+>
+> | Problem | Fix |
+> |---------|-----|
+> | `Function not found` or `unknown function` | Make sure you ran `USE ROLE ACCOUNTADMIN;` (Step 0.3) and the cross-region setting |
+> | Query takes very long (>5 min) | This is normal for Step 2.6 — it runs AI functions on 10,000 rows. Wait for it to finish |
+> | `Table 'PLAYERS' does not exist` | Run `USE SCHEMA POSTCODE_LOTERIJ_AI.RAW;` first, or check that Module 1 completed successfully |
+> | PLAYER_INTELLIGENCE has 0 or fewer than 10,000 rows | Re-run the full query from Step 2.6. Make sure you selected the entire block before running |
+> | SEGMENT_SUMMARY shows weird segment names | Check Step 2.7 — the view should use `PLAYER_SEGMENT_JSON:labels[0]::VARCHAR`, not just `PLAYER_SEGMENT_JSON` |
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
@@ -803,7 +826,6 @@ import json
 import time
 import random
 from snowflake.snowpark.context import get_active_session
-from snowflake.snowpark.functions import call_builtin, lit
 
 # -- Page Config --
 st.set_page_config(
@@ -1175,94 +1197,13 @@ with tab2:
 
 
 # ============================================================
-# TAB 3: AI ASSISTANT
+# TAB 3: AI ASSISTANT (placeholder — unlocked in Module 5)
 # ============================================================
 with tab3:
-    st.subheader("Ask questions about player data and charity impact")
-    st.caption("Powered by Snowflake Cortex AI \u2014 your data never leaves Snowflake")
-
-    @st.cache_data(ttl=600)
-    def get_context():
-        seg = session.sql("SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY").to_pandas()
-        charity = session.sql("SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.CHARITY_IMPACT ORDER BY TOTAL_RECEIVED DESC LIMIT 15").to_pandas()
-        kpis = session.sql("""
-            SELECT COUNT(*) AS TOTAL_PLAYERS,
-                SUM(CASE WHEN STATUS = 'Active' THEN 1 ELSE 0 END) AS ACTIVE,
-                ROUND(AVG(MONTHLY_SPEND), 2) AS AVG_SPEND,
-                ROUND(SUM(CHARITY_CONTRIBUTION), 0) AS CHARITY_TOTAL,
-                ROUND(AVG(FEEDBACK_SENTIMENT), 3) AS AVG_SENTIMENT
-            FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
-        """).to_pandas()
-        return seg, charity, kpis
-
-    seg_df, charity_df, kpi_context = get_context()
-
-    SYSTEM_PROMPT = f"""You are an analytics assistant for the Postcode Loterij (Dutch Postcode Lottery).
-You have access to player intelligence data.
-
-Key metrics:
-{kpi_context.to_string(index=False)}
-
-Player segments:
-{seg_df.to_string(index=False)}
-
-Top charity partners by donations received:
-{charity_df.to_string(index=False)}
-
-Context about the business:
-- Postcode Loterij is the largest charity lottery in the Netherlands
-- Players subscribe monthly using their postcode as their ticket number
-- Neighbours win together — whole streets can win the StreetPrize
-- 40% of all revenue goes to 150+ charity partners
-- The PostcodeKanjer (January draw) is the biggest prize — EUR 59.7 million in 2026
-- They operate in 5 countries: Netherlands, Sweden, UK, Germany, Norway
-- The brand rebranded in January 2026 from Nationale Postcode Loterij to Postcode Loterij
-
-Answer questions about player segments, charity impact, retention strategies, and business performance.
-Be specific with numbers. Give actionable recommendations when asked."""
-
-    SUGGESTIONS = {
-        "Segment analysis": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
-        "Charity impact": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
-        "Churn insights": "What can you tell me about churn patterns? What strategies would you recommend to reduce churn?",
-        "Growth ideas": "What are the top 3 growth opportunities based on the player data?",
-    }
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    if not st.session_state.messages:
-        st.write("**Try one of these questions:**")
-        for label, question in SUGGESTIONS.items():
-            if st.button(f"{label}: {question}"):
-                st.session_state.messages.append({"role": "user", "content": question})
-                st.rerun()
-
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-
-    if prompt := st.chat_input("Ask about players, charities, or performance..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.write(prompt)
-
-    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                prompt_parts = [f"SYSTEM: {SYSTEM_PROMPT}"]
-                for m in st.session_state.messages:
-                    prompt_parts.append(f"{m['role'].upper()}: {m['content']}")
-                prompt_parts.append("ASSISTANT:")
-                full_prompt = "\n\n".join(prompt_parts)
-
-                result_df = session.create_dataframe([{"dummy": "x"}]).select(
-                    call_builtin("SNOWFLAKE.CORTEX.COMPLETE", lit("claude-3-5-sonnet"), lit(full_prompt)).alias("RESPONSE")
-                )
-                response = result_df.collect()[0]["RESPONSE"]
-                st.write(response)
-
-        st.session_state.messages.append({"role": "assistant", "content": response})
+    st.subheader("AI Assistant")
+    st.info("Complete **Module 5** to unlock the AI Assistant. "
+            "You will create a Semantic View and Cortex Agent, "
+            "then connect them to this tab.")
 ```
 
 ### 3.4 Run the App
@@ -1273,15 +1214,17 @@ You should see:
 - A **red branded header** with the PL logo and title
 - **Three tabs**: Player Dashboard, Winner Draft, AI Assistant
 - The Player Dashboard tab loaded with KPI cards and charts
+- The AI Assistant tab shows a placeholder — you'll unlock it in Module 5
 
 > **Troubleshooting**:
 >
-> | Error | Fix |
-> |-------|-----|
+> | Problem | Fix |
+> |---------|-----|
 > | `Table 'PLAYER_INTELLIGENCE' does not exist` | Go back and complete Module 2, Step 2.6 |
 > | `View 'SEGMENT_SUMMARY' does not exist` | Go back and complete Module 2, Step 2.7 |
-> | `module 'streamlit' has no attribute 'chat_input'` | Check that `environment.yml` has `streamlit=1.35.0` |
 > | Charts show but no data | Make sure the AI enrichment query (Step 2.6) completed successfully |
+> | App shows a blank screen or won't load | Click **Run** again. If it still fails, check that `environment.yml` has the exact content from Step 3.2 |
+> | `Syntax error` in the code | Make sure you copied the *entire* code block from Step 3.3 — partial copies cause errors |
 
 > **Snowflake Concept — Streamlit in Snowflake (SiS):**
 >
@@ -1289,8 +1232,6 @@ You should see:
 > - `get_active_session()` — connects to the Snowflake session that's hosting the app
 > - `session.sql("...")` — runs SQL queries directly against your Snowflake data
 > - `session.sql(...).to_pandas()` — executes the query and returns results as a Pandas DataFrame
-> - `call_builtin("SNOWFLAKE.CORTEX.COMPLETE", ...)` — calls the Cortex AI LLM from Python code
-> - `st.cache_data(ttl=600)` — caches query results for 10 minutes to improve performance
 > - `st.session_state` — preserves data (like chat history) between user interactions
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
@@ -1314,7 +1255,7 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 ### 4.2 Winner Draft
 
 1. Click the **Winner Draft** tab
-2. Use the dropdown to **select a draw** — try picking a **PostcodeKanjer** (the biggest prize, happens in January)
+2. Use the dropdown to **select a draw** — try picking a **Postcode Kanjer** (the biggest prize, happens in January)
 3. Notice the KPI cards showing prize type, pool, and date
 4. Click the red **"Draft Winner!"** button
 5. Watch the **animated postcode spinner** — postcodes flash rapidly, then slow down
@@ -1324,24 +1265,19 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 
 > **This mirrors reality**: In the real Postcode Loterij, all neighbours who share a winning postcode win together. The prize pool is split among them. That's the "samen winnen" (winning together) concept.
 
-### 4.3 AI Assistant
+### 4.3 AI Assistant (Preview)
 
 1. Click the **AI Assistant** tab
-2. Click one of the **four suggestion buttons** to start a conversation (e.g., "Segment analysis")
-3. Read the AI's response — it uses your actual player data from the PLAYER_INTELLIGENCE table
-4. Type a **follow-up question** in the chat input at the bottom. Try:
-   - *"Which city has the highest churn rate?"*
-   - *"Write a marketing email for At-Risk players in Rotterdam"*
-   - *"What would happen to charity funding if we reduced churn by 5%?"*
-5. Notice the AI gives **specific numbers** from your data — it's not guessing
+2. You'll see a placeholder message — this tab will come alive in **Module 5**
+3. After completing Module 5, you'll be able to ask natural language questions and the **Cortex Agent** will query your data in real time using the Semantic View you create
 
-> **How the chatbot works**: The AI Assistant uses `SNOWFLAKE.CORTEX.COMPLETE` — the same LLM function you used in SQL (Step 2.5). Here, we give it context about your data (segment summaries, charity data, KPIs) as a system prompt, then pass the full conversation history so it can maintain context across turns. All of this runs inside Snowflake.
+> **What's coming in Module 5**: Instead of a chatbot with hardcoded context, you'll build a Cortex Agent that dynamically generates SQL from natural language. The agent reads a Semantic View (a business-friendly data dictionary) and writes accurate queries on the fly — no manual prompt engineering needed.
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 <img src="https://img.shields.io/badge/Module_5-Semantic_View_&_Agent-E40421?style=flat-square" alt="Module 5">
 
-## Module 5 — Semantic View & Cortex Agent (15 min)
+## Module 5 — Semantic View & Cortex Agent (20 min)
 
 > **Goal**: Create a business-friendly data model (Semantic View) and an AI agent that can answer natural language questions about your player data by automatically generating SQL.
 
@@ -1568,9 +1504,9 @@ You should see: `Statement executed successfully.`
 >
 > When you ask a question, the agent: (1) reads your question, (2) decides which tool to use, (3) passes the question to Cortex Analyst, (4) Cortex Analyst reads the Semantic View to generate SQL, (5) runs the SQL, (6) the agent formats the response.
 
-### 5.4 Test the Agent
+### 5.4 Test the Agent in Snowsight
 
-You can test the agent directly from Snowsight:
+Before connecting the agent to our app, let's verify it works. You can test it directly from Snowsight:
 
 1. In the left sidebar, click **AI & ML** > **Agents**
 2. You should see **Loterij Intelligence Agent** in the list
@@ -1585,14 +1521,282 @@ You can test the agent directly from Snowsight:
 
 5. Notice how the agent generates SQL automatically — you can see the query it ran and the results
 
-> **Compare this to the Streamlit chatbot** (Module 3, Tab 3): The Streamlit chatbot uses hardcoded data context — we manually pasted segment summaries and KPIs into the prompt. The Cortex Agent dynamically queries the actual database using your Semantic View. It can answer questions the Streamlit chatbot cannot, because it writes real SQL instead of relying on pre-loaded context.
+> **Key insight**: The agent doesn't have hardcoded data. It reads the Semantic View you created in Step 5.1, understands the business meaning of each column, and writes SQL on the fly. This is fundamentally different from pasting data into a prompt.
 
-### 5.5 What You Just Built
+### 5.5 Set Up Container Runtime
 
-You created a complete AI analytics stack:
+Our Streamlit app currently runs on a **warehouse** — great for dashboards, but it can't make web requests. To connect it to the Cortex Agent, we need to upgrade it to **container runtime**, which gives the app the ability to call Snowflake's AI APIs directly.
+
+Run these SQL statements **one block at a time** in your SQL worksheet:
+
+```sql
+-- 1. Create a compute pool (the server that will run our container)
+CREATE COMPUTE POOL IF NOT EXISTS LOTERIJ_COMPUTE_POOL
+  MIN_NODES = 1
+  MAX_NODES = 1
+  INSTANCE_FAMILY = CPU_X64_XS
+  AUTO_RESUME = TRUE
+  AUTO_SUSPEND_SECS = 300;
+```
+
+```sql
+-- 2. Allow the container to download Python packages from the internet
+CREATE OR REPLACE NETWORK RULE POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_PYPI_RULE
+  TYPE = HOST_PORT
+  MODE = EGRESS
+  VALUE_LIST = ('pypi.org', 'files.pythonhosted.org');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION LOTERIJ_PYPI_ACCESS
+  ALLOWED_NETWORK_RULES = (POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_PYPI_RULE)
+  ENABLED = TRUE;
+```
+
+```sql
+-- 3. Upgrade the Streamlit app to container runtime
+--    We recreate the app via SQL so we can attach the compute pool,
+--    container runtime, and network access.
+--    FROM copies your existing code automatically.
+CREATE OR REPLACE STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
+  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP_STAGE'
+  MAIN_FILE = 'streamlit_app.py'
+  QUERY_WAREHOUSE = 'LOTERIJ_WH'
+  RUNTIME_NAME = 'SYSTEM$ST_CONTAINER_RUNTIME_PY3_11'
+  COMPUTE_POOL = 'LOTERIJ_COMPUTE_POOL'
+  TITLE = 'Postcode Loterij Intelligence'
+  EXTERNAL_ACCESS_INTEGRATIONS = (LOTERIJ_PYPI_ACCESS);
+
+-- 4. Activate the live version
+ALTER STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
+  ADD LIVE VERSION FROM LAST;
+```
+
+Each statement should show: `Statement executed successfully.` or `Streamlit POSTCODE_LOTERIJ_APP successfully created.`
+
+> **Snowflake Concept — Container Runtime for Streamlit:**
+>
+> Streamlit in Snowflake can run in two modes:
+> - **Warehouse runtime** (default): Your app runs on a virtual warehouse. Simple and fast, but the app cannot make web requests or install custom Python packages. This is what we used in Module 3.
+> - **Container runtime**: Your app runs in its own container on a dedicated compute pool. This unlocks the ability to call Snowflake REST APIs (like the Cortex Agent) and install any Python package you need.
+>
+> **Why do we recreate the app with SQL?** In Module 3, we created the app through the Snowsight UI — quick and easy for a warehouse-based dashboard. To upgrade it to container runtime, we need to attach a compute pool and network access, which can only be done via SQL. The `CREATE OR REPLACE` rebuilds the app with these new settings while `FROM` preserves your existing code.
+>
+> **What are the three things we just created?**
+> 1. **Compute pool** — a small server that runs the container (auto-suspends when idle to save costs)
+> 2. **Network rule + external access integration** — a security policy that allows the container to download Python packages from `pypi.org` (Snowflake blocks all outbound traffic by default)
+> 3. **Upgraded Streamlit app** — same code, now running on the container with full API access
+
+### 5.6 Upload the Requirements File
+
+Now reopen the Streamlit app in the editor:
+
+1. In the left sidebar, click **Projects** > **Streamlit**
+2. Click on **POSTCODE_LOTERIJ_APP** to open it
+
+Container runtime uses a different package file than warehouse runtime. We need to replace `environment.yml` with a `requirements.txt` that lists the Python packages our app needs.
+
+3. In the Streamlit editor, click the **file list** on the left
+4. Click the **+** button to add a new file
+5. Name it: `requirements.txt`
+6. Paste the following content:
 
 ```
-Natural language question
+streamlit==1.50.0
+snowflake-snowpark-python
+requests
+```
+
+7. You can **delete** the `environment.yml` file (click the three dots next to it and select Delete) — it's no longer needed with container runtime
+
+> **Why these packages?**
+> - `streamlit==1.50.0` — The version of Streamlit that runs in container mode
+> - `snowflake-snowpark-python` — Lets our app run SQL queries against Snowflake
+> - `requests` — Lets our app call the Cortex Agent API
+
+### 5.7 Upgrade Tab 3 — Connect the Agent
+
+Now for the exciting part: replace the placeholder Tab 3 with the real Cortex Agent chatbot. 
+
+1. Click on **`streamlit_app.py`** in the file list
+2. Find the **imports** at the top of the file (lines 1-6). **Replace** them with:
+
+```python
+import streamlit as st
+import pandas as pd
+import json
+import time
+import random
+import os
+import requests
+from snowflake.snowpark.context import get_active_session
+```
+
+3. Find the **Tab 3 placeholder** near the bottom of the file (look for `# TAB 3: AI ASSISTANT`). **Replace the entire Tab 3 block** — from the `# ====` comment line through to the end of the file — with:
+
+```python
+# ============================================================
+# TAB 3: AI ASSISTANT
+# ============================================================
+with tab3:
+
+    st.subheader("Ask questions about player data and charity impact")
+    st.caption("Powered by Cortex Agent + Semantic View — your data never leaves Snowflake")
+
+    # ---- Cortex Agent helpers ----
+    AGENT_ENDPOINT = (
+        "/api/v2/databases/POSTCODE_LOTERIJ_AI/schemas/ANALYTICS"
+        "/agents/LOTERIJ_AGENT:run"
+    )
+
+    def get_agent_token():
+        """Read the SPCS session token for authenticated API calls."""
+        with open("/snowflake/session/token", "r") as f:
+            return f.read().strip()
+
+    def call_agent(prompt, conversation_history=None):
+        """Call the Cortex Agent API and return the full response text."""
+        token = get_agent_token()
+        host = os.environ.get("SNOWFLAKE_HOST", "")
+        url = f"https://{host}{AGENT_ENDPOINT}"
+
+        messages = []
+        if conversation_history:
+            for m in conversation_history:
+                messages.append({
+                    "role": m["role"],
+                    "content": [{"type": "text", "text": m["content"]}],
+                })
+        messages.append({
+            "role": "user",
+            "content": [{"type": "text", "text": prompt}],
+        })
+
+        payload = {"messages": messages, "stream": True}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Snowflake-Authorization-Token-Type": "OAUTH",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+        }
+
+        response_text = ""
+        with requests.post(url, json=payload, headers=headers, stream=True) as r:
+            r.raise_for_status()
+            for line in r.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                if line.startswith("data: "):
+                    data_str = line[len("data: "):]
+                elif line.startswith("data:"):
+                    data_str = line[len("data:"):]
+                else:
+                    continue
+                data_str = data_str.strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    event = json.loads(data_str)
+                    # Named agent endpoint format
+                    if "text" in event:
+                        response_text += event["text"]
+                    # Fallback: older delta.content format
+                    elif "delta" in event:
+                        delta = event["delta"]
+                        for item in delta.get("content", []):
+                            if item.get("type") == "text":
+                                response_text += item.get("text", "")
+                except json.JSONDecodeError:
+                    continue
+        return response_text
+
+    # ---- Suggestion prompts ----
+    SUGGESTIONS = {
+        "Segment analysis": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
+        "Charity impact": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
+        "Churn insights": "What can you tell me about churn patterns? What strategies would you recommend to reduce churn?",
+        "Growth ideas": "What are the top 3 growth opportunities based on the player data?",
+    }
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Suggestion buttons (short labels)
+    if not st.session_state.messages:
+        st.write("**Try one of these questions:**")
+        cols = st.columns(len(SUGGESTIONS))
+        for i, (label, question) in enumerate(SUGGESTIONS.items()):
+            with cols[i]:
+                if st.button(label, use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": question})
+                    st.rerun()
+
+    # Chat history
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Chat input
+    if prompt := st.chat_input("Ask about players, charities, or performance..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+    # Process pending user message via Cortex Agent
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        with st.chat_message("assistant"):
+            with st.spinner("Agent is querying your data..."):
+                history = st.session_state.messages[:-1]
+                user_msg = st.session_state.messages[-1]["content"]
+                try:
+                    response = call_agent(user_msg, history)
+                    if not response.strip():
+                        response = "The agent returned an empty response. Try rephrasing your question."
+                except Exception as e:
+                    response = f"Could not reach the Cortex Agent. Error: {e}"
+                st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+```
+
+4. Click **Run** to reload the app
+
+> **Snowflake Concept — How the Agent Chatbot Works:**
+>
+> When a user types a question in the chat, the app:
+> 1. **Authenticates** automatically — the container runtime provides a secure session token, so no passwords or API keys are needed
+> 2. **Sends the question** to the Cortex Agent you created in Step 5.3
+> 3. **The agent generates SQL** using the Semantic View from Step 5.1 — it understands what each column means and writes the right query
+> 4. **Returns the answer** as natural language — the user sees a response with real numbers, not the raw SQL
+>
+> The app never sees the raw data directly. It asks the agent a question and gets back a human-readable answer. This is the same pattern used in production Snowflake applications.
+
+### 5.8 Test the AI Assistant
+
+Now try the AI Assistant in your app:
+
+1. Click the **AI Assistant** tab
+2. Click one of the **suggestion buttons** (e.g., "Segment analysis")
+3. Watch the agent query your data and respond with real numbers
+4. Try a **follow-up question** in the chat input:
+   - *"Which city has the highest churn rate?"*
+   - *"What would happen to charity funding if we reduced churn by 5%?"*
+   - *"Compare the average spend of New Players vs High-Value Loyal"*
+5. Notice the agent gives **specific numbers** — it's running SQL against your actual data, not guessing
+
+> **Troubleshooting**:
+>
+> | Problem | Fix |
+> |---------|-----|
+> | `Could not reach the Cortex Agent` | Wait 1-2 minutes for the compute pool to start, then refresh |
+> | `403 Forbidden` | Check that the Streamlit app was created with the correct compute pool and EAI in Step 5.5 |
+> | Agent returns empty responses | Verify the agent exists: `SHOW AGENTS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;` |
+> | App shows a loading error | Make sure you ran all three SQL blocks in Step 5.5 and that the compute pool is running: `SHOW COMPUTE POOLS;` |
+> | `Syntax error` after pasting the code | Make sure you replaced the entire Tab 3 block including the `with tab3:` line, and that the imports at the top include `os` and `requests` |
+
+### 5.9 What You Just Built
+
+You created a complete AI analytics stack — from raw data to a conversational interface:
+
+```
+User asks a question in the Streamlit app
         │
         ▼
    CORTEX AGENT (understands business context)
@@ -1607,10 +1811,10 @@ Natural language question
    PLAYER_INTELLIGENCE table (AI-enriched data)
         │
         ▼
-   Answer with real numbers
+   Answer with real numbers — displayed in the app
 ```
 
-This is the same architecture that production Snowflake customers use to give business users self-service analytics without writing SQL.
+This is the same architecture that production Snowflake customers use to give business users self-service analytics without writing SQL. And it all runs inside your Streamlit app.
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
@@ -1665,9 +1869,10 @@ Your instructor will guide you through accessing Cortex Code. The general workfl
 | 📝 | Profile summaries | `SNOWFLAKE.CORTEX.SUMMARIZE` | Creates one-sentence player summaries |
 | ✉️ | Personalized messages | `SNOWFLAKE.CORTEX.COMPLETE` | Generates custom retention copy using an LLM |
 | 📊 | Interactive dashboard | Streamlit in Snowflake | Three-tab branded dashboard with KPIs, charts, and tables |
-| 💬 | AI chatbot | `SNOWFLAKE.CORTEX.COMPLETE` + Streamlit | Conversational analytics assistant with data context |
+| 🤖 | AI Agent chatbot | Cortex Agent + Semantic View | Conversational assistant that queries your data in real time |
 | 📐 | Semantic View | `CREATE SEMANTIC VIEW` | Business data model with dimensions, facts, and metrics |
-| 🤖 | AI Agent | `CREATE AGENT` + Cortex Analyst | Natural language to SQL — ask questions, get answers |
+| 🧠 | AI Agent | `CREATE AGENT` + Cortex Analyst | Natural language to SQL — ask questions, get answers |
+| 🐳 | Container runtime | Compute Pool + SPCS | Enables REST API calls from Streamlit to the Cortex Agent |
 
 **🔒 Everything ran inside Snowflake.** No external APIs. No additional tools. No data left your account.
 
@@ -1680,6 +1885,8 @@ To remove everything created in this lab:
 ```sql
 DROP DATABASE IF EXISTS POSTCODE_LOTERIJ_AI;
 DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
+DROP COMPUTE POOL IF EXISTS LOTERIJ_COMPUTE_POOL;
+DROP INTEGRATION IF EXISTS LOTERIJ_PYPI_ACCESS;
 ```
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
@@ -1688,6 +1895,7 @@ DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
 
 - [Snowflake Cortex AI Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex)
 - [Streamlit in Snowflake Documentation](https://docs.snowflake.com/en/developer-guide/streamlit/about-streamlit)
+- [Streamlit Container Runtime](https://docs.snowflake.com/en/developer-guide/streamlit/container-runtime)
 - [Semantic Views Documentation](https://docs.snowflake.com/en/user-guide/views-semantic/sql)
 - [Cortex Agents Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents)
 - [CREATE SEMANTIC VIEW Reference](https://docs.snowflake.com/en/sql-reference/sql/create-semantic-view)

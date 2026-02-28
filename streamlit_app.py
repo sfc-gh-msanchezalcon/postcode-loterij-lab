@@ -3,8 +3,9 @@ import pandas as pd
 import json
 import time
 import random
+import os
+import requests
 from snowflake.snowpark.context import get_active_session
-from snowflake.snowpark.functions import call_builtin, lit
 
 # -- Page Config --
 st.set_page_config(
@@ -490,55 +491,76 @@ with tab2:
 with tab3:
 
     st.subheader("Ask questions about player data and charity impact")
-    st.caption("Powered by Snowflake Cortex AI — your data never leaves Snowflake")
+    st.caption("Powered by Cortex Agent + Semantic View — your data never leaves Snowflake")
 
-    # Build context
-    @st.cache_data(ttl=600)
-    def get_context():
-        seg = session.sql("""
-            SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.SEGMENT_SUMMARY
-        """).to_pandas()
-        charity = session.sql("""
-            SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.CHARITY_IMPACT
-            ORDER BY TOTAL_RECEIVED DESC LIMIT 15
-        """).to_pandas()
-        kpis = session.sql("""
-            SELECT
-                COUNT(*) AS TOTAL_PLAYERS,
-                SUM(CASE WHEN STATUS = 'Active' THEN 1 ELSE 0 END) AS ACTIVE,
-                ROUND(AVG(MONTHLY_SPEND), 2) AS AVG_SPEND,
-                ROUND(SUM(CHARITY_CONTRIBUTION), 0) AS CHARITY_TOTAL,
-                ROUND(AVG(FEEDBACK_SENTIMENT), 3) AS AVG_SENTIMENT
-            FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
-        """).to_pandas()
-        return seg, charity, kpis
+    # ---- Cortex Agent helpers ----
+    AGENT_ENDPOINT = (
+        "/api/v2/databases/POSTCODE_LOTERIJ_AI/schemas/ANALYTICS"
+        "/agents/LOTERIJ_AGENT:run"
+    )
 
-    seg_df, charity_df, kpi_context = get_context()
+    def get_agent_token():
+        """Read the SPCS session token for authenticated API calls."""
+        with open("/snowflake/session/token", "r") as f:
+            return f.read().strip()
 
-    SYSTEM_PROMPT = f"""You are an analytics assistant for the Postcode Loterij (Dutch Postcode Lottery).
-You have access to player intelligence data.
+    def call_agent(prompt, conversation_history=None):
+        """Call the Cortex Agent API and return the full response text."""
+        token = get_agent_token()
+        host = os.environ.get("SNOWFLAKE_HOST", "")
+        url = f"https://{host}{AGENT_ENDPOINT}"
 
-Key metrics:
-{kpi_context.to_string(index=False)}
+        messages = []
+        if conversation_history:
+            for m in conversation_history:
+                messages.append({
+                    "role": m["role"],
+                    "content": [{"type": "text", "text": m["content"]}],
+                })
+        messages.append({
+            "role": "user",
+            "content": [{"type": "text", "text": prompt}],
+        })
 
-Player segments:
-{seg_df.to_string(index=False)}
+        payload = {"messages": messages, "stream": True}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Snowflake-Authorization-Token-Type": "OAUTH",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+        }
 
-Top charity partners by donations received:
-{charity_df.to_string(index=False)}
+        response_text = ""
+        with requests.post(url, json=payload, headers=headers, stream=True) as r:
+            r.raise_for_status()
+            for line in r.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                if line.startswith("data: "):
+                    data_str = line[len("data: "):]
+                elif line.startswith("data:"):
+                    data_str = line[len("data:"):]
+                else:
+                    continue
+                data_str = data_str.strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    event = json.loads(data_str)
+                    # Named agent endpoint format: {"content_index": 0, "text": "..."}
+                    if "text" in event:
+                        response_text += event["text"]
+                    # Fallback: older delta.content format
+                    elif "delta" in event:
+                        delta = event["delta"]
+                        for item in delta.get("content", []):
+                            if item.get("type") == "text":
+                                response_text += item.get("text", "")
+                except json.JSONDecodeError:
+                    continue
+        return response_text
 
-Context about the business:
-- Postcode Loterij is the largest charity lottery in the Netherlands
-- Players subscribe monthly using their postcode as their ticket number
-- Neighbours win together — whole streets can win the StreetPrize
-- 40% of all revenue goes to 150+ charity partners
-- The PostcodeKanjer (January draw) is the biggest prize — EUR 59.7 million in 2026
-- They operate in 5 countries: Netherlands, Sweden, UK, Germany, Norway
-- The brand rebranded in January 2026 from Nationale Postcode Loterij to Postcode Loterij
-
-Answer questions about player segments, charity impact, retention strategies, and business performance.
-Be specific with numbers. Give actionable recommendations when asked."""
-
+    # ---- Suggestion prompts ----
     SUGGESTIONS = {
         "Segment analysis": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
         "Charity impact": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
@@ -549,44 +571,38 @@ Be specific with numbers. Give actionable recommendations when asked."""
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Suggestion buttons
+    # Suggestion buttons (short labels)
     if not st.session_state.messages:
         st.write("**Try one of these questions:**")
-        for label, question in SUGGESTIONS.items():
-            if st.button(f"{label}: {question}"):
-                st.session_state.messages.append({"role": "user", "content": question})
-                st.rerun()
+        cols = st.columns(len(SUGGESTIONS))
+        for i, (label, question) in enumerate(SUGGESTIONS.items()):
+            with cols[i]:
+                if st.button(label, use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": question})
+                    st.rerun()
 
     # Chat history
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+            st.markdown(msg["content"])
 
     # Chat input
     if prompt := st.chat_input("Ask about players, charities, or performance..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
-            st.write(prompt)
+            st.markdown(prompt)
 
-    # Process pending user message
+    # Process pending user message via Cortex Agent
     if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                # Build prompt string
-                prompt_parts = [f"SYSTEM: {SYSTEM_PROMPT}"]
-                for m in st.session_state.messages:
-                    prompt_parts.append(f"{m['role'].upper()}: {m['content']}")
-                prompt_parts.append("ASSISTANT:")
-                full_prompt = "\n\n".join(prompt_parts)
-
-                result_df = session.create_dataframe([{"dummy": "x"}]).select(
-                    call_builtin(
-                        "SNOWFLAKE.CORTEX.COMPLETE",
-                        lit("claude-3-5-sonnet"),
-                        lit(full_prompt),
-                    ).alias("RESPONSE")
-                )
-                response = result_df.collect()[0]["RESPONSE"]
-                st.write(response)
-
+            with st.spinner("Agent is querying your data..."):
+                history = st.session_state.messages[:-1]
+                user_msg = st.session_state.messages[-1]["content"]
+                try:
+                    response = call_agent(user_msg, history)
+                    if not response.strip():
+                        response = "The agent returned an empty response. Try rephrasing your question."
+                except Exception as e:
+                    response = f"Could not reach the Cortex Agent. Error: {e}"
+                st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
