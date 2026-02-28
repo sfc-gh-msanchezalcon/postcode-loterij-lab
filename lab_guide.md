@@ -1216,6 +1216,7 @@ Context about the business:
 - 40% of all revenue goes to 150+ charity partners
 - The PostcodeKanjer (January draw) is the biggest prize — EUR 59.7 million in 2026
 - They operate in 5 countries: Netherlands, Sweden, UK, Germany, Norway
+- The brand rebranded in January 2026 from Nationale Postcode Loterij to Postcode Loterij
 
 Answer questions about player segments, charity impact, retention strategies, and business performance.
 Be specific with numbers. Give actionable recommendations when asked."""
@@ -1698,6 +1699,4 @@ DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
-*Lab designed for Postcode Loterij by the Snowflake team.*
-
-<img src="assets/border.svg" width="100%">
+*Lab designed for Postcode Loterij by the Snowflake                                                    

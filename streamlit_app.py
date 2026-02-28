@@ -555,7 +555,7 @@ Be specific with numbers. Give actionable recommendations when asked."""
         for label, question in SUGGESTIONS.items():
             if st.button(f"{label}: {question}"):
                 st.session_state.messages.append({"role": "user", "content": question})
-                st.experimental_rerun()
+                st.rerun()
 
     # Chat history
     for msg in st.session_state.messages:
