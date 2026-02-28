@@ -1699,4 +1699,6 @@ DROP WAREHOUSE IF EXISTS LOTERIJ_WH;
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
-*Lab designed for Postcode Loterij by the Snowflake                                                    
+*Lab designed for Postcode Loterij by the Snowflake team.*
+
+<img src="assets/border.svg" width="100%">
