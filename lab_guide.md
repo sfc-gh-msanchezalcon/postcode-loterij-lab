@@ -886,7 +886,7 @@ st.markdown(f"""
 
 # -- Branded Header (inline SVG — no external files needed) --
 st.markdown("""
-<div class="pl-header">
+<div class="pl-header" style="position:relative;">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200">
   <defs>
     <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -987,31 +987,23 @@ st.markdown("""
   <circle cx="230" cy="40" r="2.5" fill="#F39200" opacity="0.5"/>
   <circle cx="300" cy="24" r="3" fill="#23A638" opacity="0.6"/>
 
-  <!-- PL Logo — red circle with white text -->
+  <!-- PL Logo circle (text added via HTML overlay) -->
   <circle cx="420" cy="62" r="28" fill="#E40421"/>
   <circle cx="420" cy="62" r="26" fill="none" stroke="white" stroke-width="1.5" opacity="0.3"/>
-  <text x="420" y="70" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">PL</text>
-
-  <!-- Title -->
-  <text x="465" y="55" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="bold" fill="white" letter-spacing="0.5">Postcode Loterij</text>
-  <text x="465" y="80" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="white" opacity="0.75">Player Intelligence</text>
 
   <!-- Divider line -->
   <line x1="465" y1="90" x2="720" y2="90" stroke="#E40421" stroke-width="2" opacity="0.5"/>
 
-  <!-- Subtitle -->
-  <text x="465" y="110" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="white" opacity="0.6">AI-powered analytics built entirely on Snowflake</text>
-
-  <!-- Snowflake icon -->
-  <g transform="translate(448, 104)" fill="white" opacity="0.5">
-    <line x1="0" y1="-5" x2="0" y2="5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-    <line x1="-4.3" y1="-2.5" x2="4.3" y2="2.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-    <line x1="-4.3" y1="2.5" x2="4.3" y2="-2.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-  </g>
-
-  <!-- Bottom gradient bar -->
+  <!-- Bottom accent bar -->
   <rect x="0" y="194" width="900" height="6" fill="#E40421" opacity="0.8"/>
 </svg>
+<!-- HTML text overlay (Streamlit strips SVG <text> elements) -->
+<div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+  <div style="position:absolute;top:22%;left:45.2%;width:56px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,1.6vw,22px);font-weight:bold;color:white;">PL</div>
+  <div style="position:absolute;top:18%;left:51%;font-family:Georgia,'Times New Roman',serif;font-size:clamp(14px,2.1vw,28px);font-weight:bold;color:white;letter-spacing:0.5px;white-space:nowrap;">Postcode Loterij</div>
+  <div style="position:absolute;top:33%;left:51%;font-family:Arial,Helvetica,sans-serif;font-size:clamp(9px,1.2vw,16px);color:white;opacity:0.75;white-space:nowrap;">Player Intelligence</div>
+  <div style="position:absolute;top:48%;left:51%;font-family:Arial,Helvetica,sans-serif;font-size:clamp(7px,1vw,13px);color:white;opacity:0.6;white-space:nowrap;">AI-powered analytics built entirely on Snowflake</div>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
