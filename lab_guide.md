@@ -1721,10 +1721,10 @@ with tab3:
 
     # ---- Suggestion prompts ----
     SUGGESTIONS = {
-        "Segment analysis": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
-        "Charity impact": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
-        "Churn insights": "What can you tell me about churn patterns? What strategies would you recommend to reduce churn?",
-        "Growth ideas": "What are the top 3 growth opportunities based on the player data?",
+        "Segments": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
+        "Charity": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
+        "Churn": "What can you tell me about churn patterns? What strategies would you recommend to reduce churn?",
+        "Growth": "What are the top 3 growth opportunities based on the player data?",
     }
 
     if "messages" not in st.session_state:
@@ -1736,40 +1736,56 @@ with tab3:
             st.session_state.messages = []
             st.rerun()
 
-    # Suggestion buttons (short labels)
+    # Suggestion buttons (two rows of two)
     if not st.session_state.messages:
         st.write("**Try one of these questions:**")
-        cols = st.columns(len(SUGGESTIONS))
-        for i, (label, question) in enumerate(SUGGESTIONS.items()):
-            with cols[i]:
-                if st.button(label, use_container_width=True):
-                    st.session_state.messages.append({"role": "user", "content": question})
+        items = list(SUGGESTIONS.items())
+        row1 = st.columns(2)
+        for i in range(2):
+            with row1[i]:
+                if st.button(items[i][0], use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": items[i][1]})
+                    st.rerun()
+        row2 = st.columns(2)
+        for i in range(2, 4):
+            with row2[i - 2]:
+                if st.button(items[i][0], use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": items[i][1]})
                     st.rerun()
 
-    # Chat history
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    # Chat container — fixed height only when there are messages to scroll
+    if st.session_state.messages:
+        chat_container = st.container(height=500)
+    else:
+        chat_container = st.container()
 
-    # Chat input
+    # Chat history
+    with chat_container:
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+    # Chat input (outside container so it stays pinned below)
     if prompt := st.chat_input("Ask about players, charities, or performance..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
     # Process pending user message via Cortex Agent
     if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-        with st.chat_message("assistant"):
-            with st.spinner("Agent is querying your data..."):
-                history = st.session_state.messages[:-1]
-                user_msg = st.session_state.messages[-1]["content"]
-                try:
-                    response = call_agent(user_msg, history)
-                    if not response.strip():
-                        response = "The agent returned an empty response. Try rephrasing your question."
-                except Exception as e:
-                    response = f"Could not reach the Cortex Agent. Error: {e}"
-                st.markdown(response)
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner("Agent is querying your data..."):
+                    history = st.session_state.messages[:-1]
+                    user_msg = st.session_state.messages[-1]["content"]
+                    try:
+                        response = call_agent(user_msg, history)
+                        if not response.strip():
+                            response = "The agent returned an empty response. Try rephrasing your question."
+                    except Exception as e:
+                        response = f"Could not reach the Cortex Agent. Error: {e}"
+                    st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 ```
 
@@ -1790,7 +1806,7 @@ with tab3:
 Now try the AI Assistant in your app:
 
 1. Click the **AI Assistant** tab
-2. Click one of the **suggestion buttons** (e.g., "Segment analysis")
+2. Click one of the **suggestion buttons** (e.g., "Segments")
 3. Watch the agent query your data and respond with real numbers
 4. Try a **follow-up question** in the chat input:
    - *"Which city has the highest churn rate?"*
