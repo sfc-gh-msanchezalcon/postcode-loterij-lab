@@ -20,7 +20,6 @@ PL_DARK_RED = "#B8031A"
 PL_ORANGE = "#F39200"
 PL_GREEN = "#23A638"
 PL_BLUE = "#0069B4"
-PL_LIGHT_BG = "#FFF5F5"
 
 # -- Custom CSS for Postcode Loterij branding --
 st.markdown(f"""
