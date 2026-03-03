@@ -127,11 +127,14 @@ players_raw AS (
             WHEN 5 THEN '2-lot'
             ELSE '1-lot'
         END AS TICKET_TYPE,
-        -- Monthly spend based on ticket type (approx €15 per lot per month)
-        CASE
-            WHEN UNIFORM(1, 10, RANDOM()) <= 2 THEN 45.00  -- 3-lot
-            WHEN UNIFORM(1, 10, RANDOM()) <= 5 THEN 30.00  -- 2-lot
-            ELSE 15.00  -- 1-lot
+        -- Monthly spend derived from ticket type (€15 per lot)
+        CASE UNIFORM(1, 10, RANDOM())
+            WHEN 1 THEN 45  -- 3-lot
+            WHEN 2 THEN 45  -- 3-lot
+            WHEN 3 THEN 30  -- 2-lot
+            WHEN 4 THEN 30  -- 2-lot
+            WHEN 5 THEN 30  -- 2-lot
+            ELSE 15  -- 1-lot
         END AS MONTHLY_SPEND,
         -- Acquisition channel
         CASE UNIFORM(1, 8, RANDOM())

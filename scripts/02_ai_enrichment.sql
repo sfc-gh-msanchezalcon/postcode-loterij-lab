@@ -93,7 +93,7 @@ SELECT
     PLAYER_NAME,
     STATUS,
     SNOWFLAKE.CORTEX.COMPLETE(
-        'claude-3-5-sonnet',
+        'claude-3-5-sonnet',  -- If this model is unavailable, try 'mistral-large2' or 'llama3.1-70b'
         'Write a short, warm, personalized retention message (max 2 sentences) for this Dutch Postcode Lottery player. ' ||
         'Player: ' || PLAYER_NAME || ', ' || STATUS || ' for ' || TENURE_MONTHS || ' months. ' ||
         'They play ' || TICKET_TYPE || ' and joined via ' || ACQUISITION_CHANNEL || '. ' ||

@@ -42,9 +42,12 @@ By the end you will have:
     │  │ PLAYERS │  Extract       │ PLAYER_      │       │
     │  │ DRAWS   │                │ INTELLIGENCE │       │
     │  │ TICKETS │                │              │       │
-    │  │ CHARITIES│               │ Views        │       │
-    │  │ DONATIONS│               └──────┬───────┘       │
-    │  └─────────┘                       │               │
+    │  │ CHARITIES│               │ SEGMENT_     │       │
+    │  │ DONATIONS│               │ SUMMARY      │       │
+    │  └─────────┘                │ CHARITY_     │       │
+    │                             │ IMPACT       │       │
+    │                             │ DRAW_RESULTS │       │
+    │                             └──────┬───────┘       │
     │                          ┌─────────▼──────────┐    │
     │                          │ SEMANTIC VIEW       │    │
     │                          │ Business data model │    │
@@ -130,6 +133,9 @@ You should see `Statement executed successfully.` for each.
 Copy and run this block:
 
 ```sql
+-- Make sure you have the right role (in case you opened a new worksheet)
+USE ROLE ACCOUNTADMIN;
+
 -- Create a database to hold all our lab data
 CREATE OR REPLACE DATABASE POSTCODE_LOTERIJ_AI;
 
@@ -268,10 +274,11 @@ players_raw AS (
             WHEN 3 THEN '2-lot' WHEN 4 THEN '2-lot' WHEN 5 THEN '2-lot'
             ELSE '1-lot'
         END AS TICKET_TYPE,
-        CASE
-            WHEN UNIFORM(1, 10, RANDOM()) <= 2 THEN 45.00
-            WHEN UNIFORM(1, 10, RANDOM()) <= 5 THEN 30.00
-            ELSE 15.00
+        -- Monthly spend derived from ticket type (€15 per lot)
+        CASE UNIFORM(1, 10, RANDOM())
+            WHEN 1 THEN 45 WHEN 2 THEN 45
+            WHEN 3 THEN 30 WHEN 4 THEN 30 WHEN 5 THEN 30
+            ELSE 15
         END AS MONTHLY_SPEND,
         CASE UNIFORM(1, 8, RANDOM())
             WHEN 1 THEN 'TV Campaign' WHEN 2 THEN 'Door-to-door'
@@ -493,6 +500,8 @@ USE WAREHOUSE LOTERIJ_WH;
 USE SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
 ```
 
+> **Why ANALYTICS?** We switch to the `ANALYTICS` schema because that's where we'll create the AI-enriched table and views (Step 2.6 onwards). In the queries below, we use fully qualified names like `POSTCODE_LOTERIJ_AI.RAW.PLAYERS` to read from the `RAW` schema. Fully qualified names (`DATABASE.SCHEMA.TABLE`) work regardless of which schema you're currently in — they're like an absolute path to the table.
+
 ### 2.1 Sentiment Analysis
 
 Our first AI function: `SNOWFLAKE.CORTEX.SENTIMENT`. It scores text on a scale from **-1** (very negative) to **+1** (very positive).
@@ -607,6 +616,8 @@ LIMIT 3;
 **What to look for**: Each player gets a unique, personalized message that references their specific feedback and situation. This is AI-generated marketing copy running directly in SQL.
 
 > **How it works**: `SNOWFLAKE.CORTEX.COMPLETE` takes two arguments: (1) the model name (e.g., `'claude-3-5-sonnet'`), and (2) a text prompt. The LLM generates a response based on the prompt. You can use this for any text generation task — emails, reports, translations, code, and more. The first argument selects which LLM to use; Snowflake supports several models.
+>
+> **Model not available?** If you get an error like `Unknown model` for `claude-3-5-sonnet`, it means this model is not enabled in your account's region. Replace `'claude-3-5-sonnet'` with `'mistral-large2'` or `'llama3.1-70b'` in the query above. You can check which models are available by running: `SELECT * FROM TABLE(INFORMATION_SCHEMA.ML_RUNTIME_FUNCTIONS()) WHERE FUNCTION_NAME = 'COMPLETE';`
 
 ### 2.6 Build the PLAYER_INTELLIGENCE Table
 
@@ -1538,12 +1549,11 @@ You should see: `Statement executed successfully.`
 -- List all semantic views in the schema
 SHOW SEMANTIC VIEWS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
 
--- See the dimensions, facts, and metrics defined
-SHOW SEMANTIC DIMENSIONS FOR SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW;
-SHOW SEMANTIC METRICS FOR SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW;
+-- See all dimensions, facts, and metrics defined in the semantic view
+DESCRIBE SEMANTIC VIEW POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_SEMANTIC_VIEW;
 ```
 
-You should see your dimensions (city, status, segment, etc.) and metrics (player_count, avg_monthly_spend, churn_rate, etc.) listed.
+You should see a detailed table listing every dimension (city, status, segment, etc.), fact (monthly_spend, tenure_months, etc.), and metric (player_count, avg_monthly_spend, churn_rate, etc.) — along with their expressions, data types, and synonyms.
 
 ### 5.3 Create the Cortex Agent
 
@@ -1617,6 +1627,8 @@ You should see: `Statement executed successfully.`
 > - **Tool Resources**: Connect each tool to a data source (here: our semantic view)
 >
 > When you ask a question, the agent: (1) reads your question, (2) decides which tool to use, (3) passes the question to Cortex Analyst, (4) Cortex Analyst reads the Semantic View to generate SQL, (5) runs the SQL, (6) the agent formats the response.
+>
+> **Model note**: The agent uses `claude-4-sonnet` as its orchestration model. If this model is not available in your region, replace `claude-4-sonnet` in the YAML with `claude-3-5-sonnet` or `mistral-large2`. You can check available models with: `SELECT * FROM TABLE(INFORMATION_SCHEMA.ML_RUNTIME_FUNCTIONS()) WHERE FUNCTION_NAME = 'COMPLETE';`
 
 ### 5.4 Test the Agent in Snowsight
 
@@ -1668,7 +1680,15 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION LOTERIJ_PYPI_ACCESS
 ```
 
 ```sql
--- 3. Upgrade the Streamlit app to container runtime
+-- 3. Verify the stage exists (Snowflake auto-creates it when you save the app)
+--    You should see one row with POSTCODE_LOTERIJ_APP_STAGE
+SHOW STAGES LIKE '%POSTCODE_LOTERIJ_APP%' IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
+```
+
+> **What is this stage?** When you created the Streamlit app in Module 3 via the Snowsight UI, Snowflake automatically created an internal stage to store the app's files (`streamlit_app.py`, `environment.yml`). We need this stage to exist so the next command can read the code from it. If you don't see a result, go back to **Projects > Streamlit** and make sure your app exists.
+
+```sql
+-- 4. Upgrade the Streamlit app to container runtime
 --    We recreate the app via SQL so we can attach the compute pool,
 --    container runtime, and network access.
 --    FROM copies your existing code automatically.
@@ -1681,7 +1701,9 @@ CREATE OR REPLACE STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
   TITLE = 'Postcode Loterij Intelligence'
   EXTERNAL_ACCESS_INTEGRATIONS = (LOTERIJ_PYPI_ACCESS);
 
--- 4. Activate the live version
+-- 5. Activate the live version
+--    This tells Snowflake to serve the latest saved code to users.
+--    Without this, the app would show a "no live version" error.
 ALTER STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
   ADD LIVE VERSION FROM LAST;
 ```
@@ -1746,7 +1768,19 @@ import requests
 from snowflake.snowpark.context import get_active_session
 ```
 
-3. Find the **Tab 3 placeholder** near the bottom of the file (look for `# TAB 3: AI ASSISTANT`). **Replace the entire Tab 3 block** — from the `# ====` comment line through to the end of the file — with:
+3. Find the **Tab 3 placeholder** near the bottom of the file. Use **Ctrl+F / Cmd+F** to search for `# TAB 3: AI ASSISTANT`. You should find a block that looks like this:
+
+   ```python
+   # ============================================================
+   # TAB 3: AI ASSISTANT (placeholder — unlocked in Module 5)
+   # ============================================================
+   with tab3:
+       st.subheader("AI Assistant")
+       st.info("Complete **Module 5** to unlock the AI Assistant. "
+               ...
+   ```
+
+   **Select and delete everything** from the `# ====` comment line above `# TAB 3` all the way to the end of the file (including the closing `with tab3:` block). Then **paste** the following code in its place:
 
 ```python
 # ============================================================
@@ -1992,7 +2026,16 @@ Use Cortex Code to build something new on top of the data you created. Pick one 
 
 ### How to Use Cortex Code
 
-Your instructor will guide you through accessing Cortex Code. The general workflow is:
+Cortex Code is available as a CLI tool. To access it:
+
+1. **Open a terminal** on your laptop (Terminal on Mac, Command Prompt or PowerShell on Windows)
+2. If Cortex Code is pre-installed, run: `cortex` to start a session
+3. If not yet installed, your instructor will provide the installation command or a shared environment
+4. Once connected, set your Snowflake context:
+   - Type: *"Connect to my Snowflake account and use database POSTCODE_LOTERIJ_AI"*
+5. Then describe what you want to build — for example, paste one of the challenge prompts above
+
+The general workflow is:
 
 1. **Describe** what you want to build in plain language
 2. **Review** the generated code — Cortex Code will explain what it does
@@ -2038,9 +2081,9 @@ DROP INTEGRATION IF EXISTS LOTERIJ_PYPI_ACCESS;
 
 ## Additional Resources
 
-- [Snowflake Cortex AI Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex)
+- [Snowflake Cortex AI Documentation](https://docs.snowflake.com/en/guides-overview-ai-features)
 - [Streamlit in Snowflake Documentation](https://docs.snowflake.com/en/developer-guide/streamlit/about-streamlit)
-- [Streamlit Container Runtime](https://docs.snowflake.com/en/developer-guide/streamlit/container-runtime)
+- [Streamlit Container Runtime](https://docs.snowflake.com/en/developer-guide/streamlit/app-development/runtime-environments)
 - [Semantic Views Documentation](https://docs.snowflake.com/en/user-guide/views-semantic/sql)
 - [Cortex Agents Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents)
 - [CREATE SEMANTIC VIEW Reference](https://docs.snowflake.com/en/sql-reference/sql/create-semantic-view)
@@ -2049,9 +2092,10 @@ DROP INTEGRATION IF EXISTS LOTERIJ_PYPI_ACCESS;
 - [AI_EXTRACT Function Reference](https://docs.snowflake.com/en/sql-reference/functions/ai_extract)
 - [CORTEX.COMPLETE Function Reference](https://docs.snowflake.com/en/sql-reference/functions/complete-snowflake-cortex)
 - [CORTEX.SENTIMENT Function Reference](https://docs.snowflake.com/en/sql-reference/functions/sentiment-snowflake-cortex)
+- [CORTEX.SUMMARIZE Function Reference](https://docs.snowflake.com/en/sql-reference/functions/summarize-snowflake-cortex)
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
 *Lab designed for Postcode Loterij by the Snowflake team.*
 
-<img src="assets/border.svg" width="100%">
+<img src="assets/border.                   
