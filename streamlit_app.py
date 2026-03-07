@@ -266,7 +266,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -- Navigation --
-tab1, tab2, tab3 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant"])
+tab1, tab2, tab3, tab4 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant", "AI Player Scoring"])
 
 # ============================================================
 # TAB 1: PLAYER DASHBOARD
@@ -635,3 +635,204 @@ with tab3:
                         response = f"Could not reach the Cortex Agent. Error: {e}"
                     st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
+
+# ============================================================
+# TAB 4: AI PLAYER SCORING
+# ============================================================
+with tab4:
+
+    st.markdown("### AI Player Scoring")
+    st.markdown(
+        "Select any player and get a **real-time AI churn-risk assessment** "
+        "powered by `SNOWFLAKE.CORTEX.COMPLETE` — the same pattern you'd use "
+        "with an **Amazon SageMaker real-time inference endpoint**, but with "
+        "zero infrastructure to manage."
+    )
+
+    # --- Player selector ---
+    player_list_df = session.sql("""
+        SELECT PLAYER_ID, PLAYER_NAME, CITY, STATUS
+        FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+        ORDER BY PLAYER_NAME
+    """).to_pandas()
+
+    player_options = {
+        f"{row['PLAYER_NAME']}  —  {row['CITY']} ({row['STATUS']})": row["PLAYER_ID"]
+        for _, row in player_list_df.iterrows()
+    }
+
+    selected_label = st.selectbox(
+        "Search or select a player",
+        options=list(player_options.keys()),
+        index=None,
+        placeholder="Start typing a name...",
+        key="scoring_player_select",
+    )
+
+    if selected_label:
+        pid = player_options[selected_label]
+
+        # Fetch full profile
+        profile_df = session.sql(f"""
+            SELECT *
+            FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+            WHERE PLAYER_ID = {pid}
+        """).to_pandas()
+
+        if profile_df.empty:
+            st.warning("Player not found.")
+        else:
+            row = profile_df.iloc[0]
+
+            # --- Profile card ---
+            st.markdown("---")
+            col_profile, col_stats = st.columns(2)
+
+            with col_profile:
+                st.markdown(f"**{row['PLAYER_NAME']}** · `{row['PLAYER_CODE']}`")
+                st.markdown(
+                    f"📍 {row['CITY']} · {row['POSTCODE']}  \n"
+                    f"🎂 Age group: {row['AGE_GROUP']}  \n"
+                    f"📅 Subscriber since {str(row['SUBSCRIPTION_START'])[:10]} "
+                    f"({int(row['TENURE_MONTHS'])} months)"
+                )
+
+            with col_stats:
+                seg_raw = row["PLAYER_SEGMENT_JSON"]
+                try:
+                    seg = json.loads(seg_raw)["label"] if isinstance(seg_raw, str) else seg_raw.get("label", str(seg_raw))
+                except Exception:
+                    seg = str(seg_raw)
+
+                st.markdown(
+                    f"**Status:** {row['STATUS']}  \n"
+                    f"**Segment:** {seg}  \n"
+                    f"**Ticket:** {row['TICKET_TYPE']} · €{int(row['MONTHLY_SPEND'])}/mo  \n"
+                    f"**Lifetime value:** €{int(row['ESTIMATED_LIFETIME_VALUE']):,}  \n"
+                    f"**Charity contribution:** €{int(row['CHARITY_CONTRIBUTION']):,}  \n"
+                    f"**Sentiment:** {float(row['FEEDBACK_SENTIMENT']):.2f}"
+                )
+
+            # Feedback quote
+            fb = row["FEEDBACK_TEXT"]
+            if fb and fb != "No feedback provided.":
+                st.info(f"💬  *\"{fb}\"*")
+
+            # --- Score button ---
+            st.markdown("---")
+            if st.button("🎯 Score this Player", type="primary", key="score_btn"):
+
+                with st.spinner("Running AI inference via Cortex COMPLETE..."):
+
+                    # Build the prompt — mirrors what you'd send to a SageMaker endpoint
+                    prompt = f"""You are a churn-risk scoring model for the Dutch Postcode Loterij.
+
+Analyze this player profile and return a JSON object with exactly these keys:
+- churn_risk_score: integer 0-100 (100 = certain to churn)
+- risk_level: one of "Low", "Medium", "High", "Critical"
+- top_factors: array of 3 short risk factor strings
+- retention_action: one concrete recommended action (1 sentence)
+- confidence: float 0.0-1.0
+
+Player profile:
+- Name: {row['PLAYER_NAME']}
+- Status: {row['STATUS']}
+- City: {row['CITY']}
+- Age group: {row['AGE_GROUP']}
+- Tenure: {int(row['TENURE_MONTHS'])} months
+- Ticket type: {row['TICKET_TYPE']} (€{int(row['MONTHLY_SPEND'])}/month)
+- Acquisition channel: {row['ACQUISITION_CHANNEL']}
+- AI segment: {seg}
+- Sentiment score: {float(row['FEEDBACK_SENTIMENT']):.2f}
+- Lifetime value: €{int(row['ESTIMATED_LIFETIME_VALUE']):,}
+- Feedback: "{fb}"
+
+Return ONLY the JSON object, no explanation."""
+
+                    scoring_df = session.sql(
+                        "SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', ?) AS RESULT",
+                        params=[prompt],
+                    ).to_pandas()
+
+                    raw_result = scoring_df.iloc[0]["RESULT"]
+
+                    # Parse JSON from LLM response
+                    try:
+                        # Strip markdown fences if present
+                        clean = raw_result.strip()
+                        if clean.startswith("```"):
+                            clean = clean.split("\n", 1)[1]
+                            clean = clean.rsplit("```", 1)[0]
+                        score_data = json.loads(clean)
+                    except Exception:
+                        score_data = None
+
+                    if score_data:
+                        risk_score = score_data.get("churn_risk_score", "?")
+                        risk_level = score_data.get("risk_level", "Unknown")
+                        factors = score_data.get("top_factors", [])
+                        action = score_data.get("retention_action", "N/A")
+                        confidence = score_data.get("confidence", 0)
+
+                        # Color-coded risk display
+                        risk_colors = {
+                            "Low": PL_GREEN,
+                            "Medium": PL_ORANGE,
+                            "High": PL_RED,
+                            "Critical": PL_DARK_RED,
+                        }
+                        color = risk_colors.get(risk_level, "#666")
+
+                        st.markdown(
+                            f'<div style="background:{color};color:white;padding:1rem 1.5rem;'
+                            f'border-radius:10px;font-size:1.3rem;font-weight:bold;'
+                            f'text-align:center;margin:0.5rem 0;">'
+                            f'Churn Risk: {risk_score}/100 — {risk_level}'
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.markdown("**Top Risk Factors**")
+                            for f in factors:
+                                st.markdown(f"- {f}")
+                        with c2:
+                            st.markdown("**Recommended Action**")
+                            st.markdown(action)
+                            st.caption(f"Model confidence: {confidence:.0%}")
+
+                    else:
+                        st.warning("Could not parse model response. Raw output:")
+                        st.code(raw_result)
+
+            # --- SageMaker comparison callout ---
+            st.markdown("---")
+            st.markdown(
+                f'<div style="background:#f0f7ff;border-left:4px solid {PL_BLUE};'
+                f'padding:1rem 1.2rem;border-radius:6px;margin-top:0.5rem;">'
+                f"<strong>☁️ How does this compare to Amazon SageMaker?</strong><br>"
+                f"<table style='margin-top:0.5rem;font-size:0.9rem;border-collapse:collapse;width:100%;'>"
+                f"<tr style='border-bottom:1px solid #ddd;'>"
+                f"<td style='padding:4px 8px;'></td>"
+                f"<td style='padding:4px 8px;font-weight:bold;'>SageMaker Endpoint</td>"
+                f"<td style='padding:4px 8px;font-weight:bold;'>Snowflake Cortex</td></tr>"
+                f"<tr style='border-bottom:1px solid #eee;'>"
+                f"<td style='padding:4px 8px;'>Infrastructure</td>"
+                f"<td style='padding:4px 8px;'>Provision ML instance, deploy model artifact</td>"
+                f"<td style='padding:4px 8px;'>None — SQL function call</td></tr>"
+                f"<tr style='border-bottom:1px solid #eee;'>"
+                f"<td style='padding:4px 8px;'>Data movement</td>"
+                f"<td style='padding:4px 8px;'>Export from Snowflake → S3 → endpoint</td>"
+                f"<td style='padding:4px 8px;'>Zero — data stays in Snowflake</td></tr>"
+                f"<tr style='border-bottom:1px solid #eee;'>"
+                f"<td style='padding:4px 8px;'>Scaling</td>"
+                f"<td style='padding:4px 8px;'>Auto-scaling groups, cold starts</td>"
+                f"<td style='padding:4px 8px;'>Automatic with warehouse</td></tr>"
+                f"<tr>"
+                f"<td style='padding:4px 8px;'>Cost model</td>"
+                f"<td style='padding:4px 8px;'>Per-instance-hour (even when idle)</td>"
+                f"<td style='padding:4px 8px;'>Per-token, pay only when used</td></tr>"
+                f"</table></div>",
+                unsafe_allow_html=True,
+            )

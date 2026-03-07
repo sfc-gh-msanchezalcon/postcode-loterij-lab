@@ -617,7 +617,7 @@ LIMIT 3;
 
 > **How it works**: `SNOWFLAKE.CORTEX.COMPLETE` takes two arguments: (1) the model name (e.g., `'claude-3-5-sonnet'`), and (2) a text prompt. The LLM generates a response based on the prompt. You can use this for any text generation task — emails, reports, translations, code, and more. The first argument selects which LLM to use; Snowflake supports several models.
 >
-> **Model not available?** If you get an error like `Unknown model` for `claude-3-5-sonnet`, it means this model is not enabled in your account's region. Replace `'claude-3-5-sonnet'` with `'mistral-large2'` or `'llama3.1-70b'` in the query above. You can check which models are available by running: `SELECT * FROM TABLE(INFORMATION_SCHEMA.ML_RUNTIME_FUNCTIONS()) WHERE FUNCTION_NAME = 'COMPLETE';`
+ > **Model not available?** If you get an error like `Unknown model` for `claude-3-5-sonnet`, it means this model is not enabled in your account's region. Replace `'claude-3-5-sonnet'` with `'mistral-large2'` or `'llama3.1-70b'` in the query above. You can test if a model works by running: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');`
 
 ### 2.6 Build the PLAYER_INTELLIGENCE Table
 
@@ -1098,7 +1098,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant"])
+tab1, tab2, tab3, tab4 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant", "AI Player Scoring"])
 
 # ============================================================
 # TAB 1: PLAYER DASHBOARD
@@ -1325,6 +1325,16 @@ with tab3:
     st.info("Complete **Module 5** to unlock the AI Assistant. "
             "You will create a Semantic View and Cortex Agent, "
             "then connect them to this tab.")
+
+
+# ============================================================
+# TAB 4: AI PLAYER SCORING (placeholder — unlocked in Module 5)
+# ============================================================
+with tab4:
+    st.subheader("AI Player Scoring")
+    st.info("Complete **Module 5** to unlock AI Player Scoring. "
+            "This tab uses CORTEX.COMPLETE to generate real-time "
+            "churn risk assessments for individual players.")
 ```
 
 ### 3.4 Run the App
@@ -1333,9 +1343,9 @@ Click the **Run** button (blue play icon, top right of the editor). The app shou
 
 You should see:
 - A **red branded header** with the PL logo and title
-- **Three tabs**: Player Dashboard, Winner Draft, AI Assistant
+- **Four tabs**: Player Dashboard, Winner Draft, AI Assistant, AI Player Scoring
 - The Player Dashboard tab loaded with KPI cards and charts
-- The AI Assistant tab shows a placeholder — you'll unlock it in Module 5
+- The AI Assistant and AI Player Scoring tabs show placeholders — you'll unlock them in Module 5
 
 > **Troubleshooting**:
 >
@@ -1393,6 +1403,14 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 3. After completing Module 5, you'll be able to ask natural language questions and the **Cortex Agent** will query your data in real time using the Semantic View you create
 
 > **What's coming in Module 5**: Instead of a chatbot with hardcoded context, you'll build a Cortex Agent that dynamically generates SQL from natural language. The agent reads a Semantic View (a business-friendly data dictionary) and writes accurate queries on the fly — no manual prompt engineering needed.
+
+### 4.4 AI Player Scoring (Preview)
+
+1. Click the **AI Player Scoring** tab
+2. You'll see a placeholder message — this tab will also come alive in **Module 5**
+3. After completing Module 5, you'll be able to select any player and get a **real-time AI churn risk assessment** powered by `CORTEX.COMPLETE`
+
+> **What's coming in Module 5**: This tab uses the same LLM function (`CORTEX.COMPLETE`) you saw in Module 2 for generating retention messages — but here it acts as a **real-time scoring model**. You send it a player profile and it returns a structured risk score, just like calling an Amazon SageMaker inference endpoint — but without any infrastructure to manage.
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
@@ -1628,7 +1646,7 @@ You should see: `Statement executed successfully.`
 >
 > When you ask a question, the agent: (1) reads your question, (2) decides which tool to use, (3) passes the question to Cortex Analyst, (4) Cortex Analyst reads the Semantic View to generate SQL, (5) runs the SQL, (6) the agent formats the response.
 >
-> **Model note**: The agent uses `claude-4-sonnet` as its orchestration model. If this model is not available in your region, replace `claude-4-sonnet` in the YAML with `claude-3-5-sonnet` or `mistral-large2`. You can check available models with: `SELECT * FROM TABLE(INFORMATION_SCHEMA.ML_RUNTIME_FUNCTIONS()) WHERE FUNCTION_NAME = 'COMPLETE';`
+ > **Model note**: The agent uses `claude-4-sonnet` as its orchestration model. If this model is not available in your region, replace `claude-4-sonnet` in the YAML with `claude-3-5-sonnet` or `mistral-large2`. You can test if a model works by running: `SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-4-sonnet', 'Say hello');`
 
 ### 5.4 Test the Agent in Snowsight
 
@@ -1778,9 +1796,14 @@ from snowflake.snowpark.context import get_active_session
        st.subheader("AI Assistant")
        st.info("Complete **Module 5** to unlock the AI Assistant. "
                ...
+   # ============================================================
+   # TAB 4: AI PLAYER SCORING (placeholder — unlocked in Module 5)
+   # ============================================================
+   with tab4:
+       ...
    ```
 
-   **Select and delete everything** from the `# ====` comment line above `# TAB 3` all the way to the end of the file (including the closing `with tab3:` block). Then **paste** the following code in its place:
+   **Select and delete everything** from the `# ====` comment line above `# TAB 3` all the way to the end of the file (including the Tab 4 placeholder). Then **paste** the following code in its place:
 
 ```python
 # ============================================================
@@ -1933,9 +1956,220 @@ with tab3:
                         response = f"Could not reach the Cortex Agent. Error: {e}"
                     st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
+
+# ============================================================
+# TAB 4: AI PLAYER SCORING
+# ============================================================
+with tab4:
+
+    st.markdown("### AI Player Scoring")
+    st.markdown(
+        "Select any player and get a **real-time AI churn-risk assessment** "
+        "powered by `SNOWFLAKE.CORTEX.COMPLETE` — the same pattern you'd use "
+        "with an **Amazon SageMaker real-time inference endpoint**, but with "
+        "zero infrastructure to manage."
+    )
+
+    # --- Player selector ---
+    player_list_df = session.sql("""
+        SELECT PLAYER_ID, PLAYER_NAME, CITY, STATUS
+        FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+        ORDER BY PLAYER_NAME
+    """).to_pandas()
+
+    player_options = {
+        f"{row['PLAYER_NAME']}  —  {row['CITY']} ({row['STATUS']})": row["PLAYER_ID"]
+        for _, row in player_list_df.iterrows()
+    }
+
+    selected_label = st.selectbox(
+        "Search or select a player",
+        options=list(player_options.keys()),
+        index=None,
+        placeholder="Start typing a name...",
+        key="scoring_player_select",
+    )
+
+    if selected_label:
+        pid = player_options[selected_label]
+
+        # Fetch full profile
+        profile_df = session.sql(f"""
+            SELECT *
+            FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+            WHERE PLAYER_ID = {pid}
+        """).to_pandas()
+
+        if profile_df.empty:
+            st.warning("Player not found.")
+        else:
+            row = profile_df.iloc[0]
+
+            # --- Profile card ---
+            st.markdown("---")
+            col_profile, col_stats = st.columns(2)
+
+            with col_profile:
+                st.markdown(f"**{row['PLAYER_NAME']}** · `{row['PLAYER_CODE']}`")
+                st.markdown(
+                    f"📍 {row['CITY']} · {row['POSTCODE']}  \n"
+                    f"🎂 Age group: {row['AGE_GROUP']}  \n"
+                    f"📅 Subscriber since {str(row['SUBSCRIPTION_START'])[:10]} "
+                    f"({int(row['TENURE_MONTHS'])} months)"
+                )
+
+            with col_stats:
+                seg_raw = row["PLAYER_SEGMENT_JSON"]
+                try:
+                    seg = json.loads(seg_raw)["label"] if isinstance(seg_raw, str) else seg_raw.get("label", str(seg_raw))
+                except Exception:
+                    seg = str(seg_raw)
+
+                st.markdown(
+                    f"**Status:** {row['STATUS']}  \n"
+                    f"**Segment:** {seg}  \n"
+                    f"**Ticket:** {row['TICKET_TYPE']} · €{int(row['MONTHLY_SPEND'])}/mo  \n"
+                    f"**Lifetime value:** €{int(row['ESTIMATED_LIFETIME_VALUE']):,}  \n"
+                    f"**Charity contribution:** €{int(row['CHARITY_CONTRIBUTION']):,}  \n"
+                    f"**Sentiment:** {float(row['FEEDBACK_SENTIMENT']):.2f}"
+                )
+
+            # Feedback quote
+            fb = row["FEEDBACK_TEXT"]
+            if fb and fb != "No feedback provided.":
+                st.info(f"💬  *\"{fb}\"*")
+
+            # --- Score button ---
+            st.markdown("---")
+            if st.button("🎯 Score this Player", type="primary", key="score_btn"):
+
+                with st.spinner("Running AI inference via Cortex COMPLETE..."):
+
+                    # Build the prompt — mirrors what you'd send to a SageMaker endpoint
+                    prompt = f"""You are a churn-risk scoring model for the Dutch Postcode Loterij.
+
+Analyze this player profile and return a JSON object with exactly these keys:
+- churn_risk_score: integer 0-100 (100 = certain to churn)
+- risk_level: one of "Low", "Medium", "High", "Critical"
+- top_factors: array of 3 short risk factor strings
+- retention_action: one concrete recommended action (1 sentence)
+- confidence: float 0.0-1.0
+
+Player profile:
+- Name: {row['PLAYER_NAME']}
+- Status: {row['STATUS']}
+- City: {row['CITY']}
+- Age group: {row['AGE_GROUP']}
+- Tenure: {int(row['TENURE_MONTHS'])} months
+- Ticket type: {row['TICKET_TYPE']} (€{int(row['MONTHLY_SPEND'])}/month)
+- Acquisition channel: {row['ACQUISITION_CHANNEL']}
+- AI segment: {seg}
+- Sentiment score: {float(row['FEEDBACK_SENTIMENT']):.2f}
+- Lifetime value: €{int(row['ESTIMATED_LIFETIME_VALUE']):,}
+- Feedback: "{fb}"
+
+Return ONLY the JSON object, no explanation."""
+
+                    scoring_df = session.sql(
+                        "SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', ?) AS RESULT",
+                        params=[prompt],
+                    ).to_pandas()
+
+                    raw_result = scoring_df.iloc[0]["RESULT"]
+
+                    # Parse JSON from LLM response
+                    try:
+                        # Strip markdown fences if present
+                        clean = raw_result.strip()
+                        if clean.startswith("```"):
+                            clean = clean.split("\n", 1)[1]
+                            clean = clean.rsplit("```", 1)[0]
+                        score_data = json.loads(clean)
+                    except Exception:
+                        score_data = None
+
+                    if score_data:
+                        risk_score = score_data.get("churn_risk_score", "?")
+                        risk_level = score_data.get("risk_level", "Unknown")
+                        factors = score_data.get("top_factors", [])
+                        action = score_data.get("retention_action", "N/A")
+                        confidence = score_data.get("confidence", 0)
+
+                        # Color-coded risk display
+                        risk_colors = {
+                            "Low": PL_GREEN,
+                            "Medium": PL_ORANGE,
+                            "High": PL_RED,
+                            "Critical": PL_DARK_RED,
+                        }
+                        color = risk_colors.get(risk_level, "#666")
+
+                        st.markdown(
+                            f'<div style="background:{color};color:white;padding:1rem 1.5rem;'
+                            f'border-radius:10px;font-size:1.3rem;font-weight:bold;'
+                            f'text-align:center;margin:0.5rem 0;">'
+                            f'Churn Risk: {risk_score}/100 — {risk_level}'
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.markdown("**Top Risk Factors**")
+                            for f in factors:
+                                st.markdown(f"- {f}")
+                        with c2:
+                            st.markdown("**Recommended Action**")
+                            st.markdown(action)
+                            st.caption(f"Model confidence: {confidence:.0%}")
+
+                    else:
+                        st.warning("Could not parse model response. Raw output:")
+                        st.code(raw_result)
+
+            # --- SageMaker comparison callout ---
+            st.markdown("---")
+            st.markdown(
+                f'<div style="background:#f0f7ff;border-left:4px solid {PL_BLUE};'
+                f'padding:1rem 1.2rem;border-radius:6px;margin-top:0.5rem;">'
+                f"<strong>☁️ How does this compare to Amazon SageMaker?</strong><br>"
+                f"<table style='margin-top:0.5rem;font-size:0.9rem;border-collapse:collapse;width:100%;'>"
+                f"<tr style='border-bottom:1px solid #ddd;'>"
+                f"<td style='padding:4px 8px;'></td>"
+                f"<td style='padding:4px 8px;font-weight:bold;'>SageMaker Endpoint</td>"
+                f"<td style='padding:4px 8px;font-weight:bold;'>Snowflake Cortex</td></tr>"
+                f"<tr style='border-bottom:1px solid #eee;'>"
+                f"<td style='padding:4px 8px;'>Infrastructure</td>"
+                f"<td style='padding:4px 8px;'>Provision ML instance, deploy model artifact</td>"
+                f"<td style='padding:4px 8px;'>None — SQL function call</td></tr>"
+                f"<tr style='border-bottom:1px solid #eee;'>"
+                f"<td style='padding:4px 8px;'>Data movement</td>"
+                f"<td style='padding:4px 8px;'>Export from Snowflake → S3 → endpoint</td>"
+                f"<td style='padding:4px 8px;'>Zero — data stays in Snowflake</td></tr>"
+                f"<tr style='border-bottom:1px solid #eee;'>"
+                f"<td style='padding:4px 8px;'>Scaling</td>"
+                f"<td style='padding:4px 8px;'>Auto-scaling groups, cold starts</td>"
+                f"<td style='padding:4px 8px;'>Automatic with warehouse</td></tr>"
+                f"<tr>"
+                f"<td style='padding:4px 8px;'>Cost model</td>"
+                f"<td style='padding:4px 8px;'>Per-instance-hour (even when idle)</td>"
+                f"<td style='padding:4px 8px;'>Per-token, pay only when used</td></tr>"
+                f"</table></div>",
+                unsafe_allow_html=True,
+            )
 ```
 
 4. Click **Run** to reload the app
+
+> **Snowflake Concept — How the AI Player Scoring Tab Works:**
+>
+> This tab demonstrates **real-time AI inference** using `SNOWFLAKE.CORTEX.COMPLETE`:
+> 1. **Select a player** from the dropdown — this runs a simple SQL query to fetch their enriched profile from `PLAYER_INTELLIGENCE`
+> 2. **Click "Score this Player"** — the app builds a structured prompt containing all the player's attributes (segment, sentiment, tenure, spend, feedback)
+> 3. **Cortex COMPLETE processes the prompt** — the LLM acts as a scoring model, analyzing the player profile and returning a structured JSON response with a churn risk score, risk level, contributing factors, and a recommended retention action
+> 4. **The app parses and displays the result** — the JSON response is rendered as a color-coded risk banner with actionable insights
+>
+> This is functionally equivalent to calling an **Amazon SageMaker real-time inference endpoint**, but without provisioning instances, managing model artifacts, or moving data out of Snowflake. The comparison table at the bottom of the tab highlights the key differences.
 
 > **Snowflake Concept — How the Agent Chatbot Works:**
 >
@@ -1968,9 +2202,34 @@ Now try the AI Assistant in your app:
 > | `403 Forbidden` | Check that the Streamlit app was created with the correct compute pool and EAI in Step 5.5 |
 > | Agent returns empty responses | Verify the agent exists: `SHOW AGENTS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;` |
 > | App shows a loading error | Make sure you ran all three SQL blocks in Step 5.5 and that the compute pool is running: `SHOW COMPUTE POOLS;` |
-> | `Syntax error` after pasting the code | Make sure you replaced the entire Tab 3 block including the `with tab3:` line, and that the imports at the top include `os` and `requests` |
+> | `Syntax error` after pasting the code | Make sure you replaced the entire Tab 3 and Tab 4 blocks, and that the imports at the top include `os` and `requests` |
 
-### 5.9 What You Just Built
+### 5.9 Test the AI Player Scoring
+
+Now try the AI Player Scoring tab:
+
+1. Click the **AI Player Scoring** tab
+2. Use the **dropdown** to search for a player — start typing a name (e.g., "Jan" or "Sophie")
+3. Review the **player profile card** — you should see their segment, sentiment, lifetime value, and feedback
+4. Click the **"Score this Player"** button
+5. Wait a few seconds — the LLM is analyzing the player profile and generating a structured risk assessment
+6. You should see:
+   - A **color-coded risk banner** (green = Low, orange = Medium, red = High/Critical)
+   - **Top 3 risk factors** explaining why the player might churn
+   - A **recommended retention action** — a concrete suggestion for what to do next
+   - **Model confidence** — how confident the LLM is in its assessment
+7. Try scoring **different player types** — compare an Active player vs a Churned player, or a High-Value Loyal vs an At-Risk player. Notice how the risk scores and factors change
+8. Scroll down to see the **SageMaker comparison table** — this shows how `CORTEX.COMPLETE` compares to deploying a SageMaker real-time inference endpoint
+
+> **Troubleshooting**:
+>
+> | Problem | Fix |
+> |---------|-----|
+> | `Unknown model` error | Replace `'claude-3-5-sonnet'` in the Tab 4 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
+> | Score button does nothing | Make sure you selected a player from the dropdown first |
+> | `Could not parse model response` | The LLM occasionally returns malformed JSON. Click "Score this Player" again — it usually works on retry |
+
+### 5.10 What You Just Built
 
 You created a complete AI analytics stack — from raw data to a conversational interface:
 
@@ -2056,8 +2315,9 @@ The general workflow is:
 | 🔍 | Insight extraction | `AI_EXTRACT` | Pulls structured fields from unstructured text |
 | 📝 | Profile summaries | `SNOWFLAKE.CORTEX.SUMMARIZE` | Creates one-sentence player summaries |
 | ✉️ | Personalized messages | `SNOWFLAKE.CORTEX.COMPLETE` | Generates custom retention copy using an LLM |
-| 📊 | Interactive dashboard | Streamlit in Snowflake | Three-tab branded dashboard with KPIs, charts, and tables |
+| 📊 | Interactive dashboard | Streamlit in Snowflake | Four-tab branded dashboard with KPIs, charts, tables, and AI scoring |
 | 🤖 | AI Agent chatbot | Cortex Agent + Semantic View | Conversational assistant that queries your data in real time |
+| 🎯 | AI Player Scoring | `SNOWFLAKE.CORTEX.COMPLETE` | Real-time churn risk assessment — like a SageMaker endpoint, but zero infrastructure |
 | 📐 | Semantic View | `CREATE SEMANTIC VIEW` | Business data model with dimensions, facts, and metrics |
 | 🧠 | AI Agent | `CREATE AGENT` + Cortex Analyst | Natural language to SQL — ask questions, get answers |
 | 🐳 | Container runtime | Compute Pool + SPCS | Enables REST API calls from Streamlit to the Cortex Agent |
