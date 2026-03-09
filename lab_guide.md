@@ -26,7 +26,7 @@ By the end you will have:
 
 1. **Synthetic lottery data** — 10,000 players, 24 months of draws, 30 charity partners
 2. **AI-enriched player intelligence** — sentiment analysis, segmentation, insights extraction, and personalized messages using Cortex AI
-3. **An interactive Streamlit dashboard** — branded with Postcode Loterij colors, featuring player KPIs, charts, a live winner draft with animation, and an AI chatbot
+3. **An interactive Streamlit dashboard** — branded with Postcode Loterij colors, featuring player KPIs, charts, a live winner draft with animation, AI player scoring, and an AI chatbot
 4. **A Semantic View & Cortex Agent** — a business-friendly data model that powers a natural language AI agent
 
 ### Architecture Overview
@@ -58,6 +58,7 @@ By the end you will have:
     │            │ Dashboard      │  │ AGENT    │ │      │
     │            │ Winner Draft   │  │ NL → SQL │ │      │
     │            │ AI Chatbot     │  └──────────┘ │      │
+    │            │ AI Scoring     │               │      │
     │            └────────────────┘               │      │
     │                                             │      │
     └─────────────────────────────────────────────────────┘
