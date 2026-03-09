@@ -1671,7 +1671,7 @@ Before connecting the agent to our app, let's verify it works. You can test it d
 
 Our Streamlit app currently runs on a **warehouse** — great for dashboards, but it can't make web requests. To connect it to the Cortex Agent, we need to upgrade it to **container runtime**, which gives the app the ability to call Snowflake's AI APIs directly.
 
-> **Trial account note**: Compute pools require Snowpark Container Services (SPCS), which is not available on all trial accounts. If the `CREATE COMPUTE POOL` command fails, you can skip steps 5.5–5.8. You already tested the agent in Step 5.4 via **AI & ML > Agents** — that works on any account. The Streamlit chatbot is just another way to access the same agent.
+> **Trial account note**: Steps 5.5–5.8 require **external network access** (for installing PyPI packages in the container runtime), which is [not available on trial accounts](https://docs.snowflake.com/en/user-guide/admin-trial-account#current-limitations-for-trial-accounts). If the network rule or external access integration fails, you can skip steps 5.5–5.8. You already tested the agent in Step 5.4 via **AI & ML > Agents** — that works on any account. The Streamlit chatbot is just another way to access the same agent. To remove this limitation, convert your trial to a paid account.
 
 Run these SQL statements **one block at a time** in your SQL worksheet:
 
