@@ -1328,13 +1328,195 @@ with tab3:
 
 
 # ============================================================
-# TAB 4: AI PLAYER SCORING (placeholder — unlocked in Module 5)
+# TAB 4: AI PLAYER SCORING
 # ============================================================
 with tab4:
-    st.subheader("AI Player Scoring")
-    st.info("Complete **Module 5** to unlock AI Player Scoring. "
-            "This tab uses CORTEX.COMPLETE to generate real-time "
-            "churn risk assessments for individual players.")
+
+    st.markdown("### AI Player Scoring")
+    st.markdown(
+        "Select any player and get a **real-time AI churn-risk assessment** "
+        "powered by `SNOWFLAKE.CORTEX.COMPLETE`. No model training, no "
+        "infrastructure — just a SQL function call that turns any LLM into "
+        "a scoring engine."
+    )
+
+    # --- Player selector ---
+    player_list_df = session.sql("""
+        SELECT PLAYER_ID, PLAYER_NAME, CITY, STATUS
+        FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+        ORDER BY PLAYER_NAME
+    """).to_pandas()
+
+    player_options = {
+        f"{row['PLAYER_NAME']}  —  {row['CITY']} ({row['STATUS']})": row["PLAYER_ID"]
+        for _, row in player_list_df.iterrows()
+    }
+
+    selected_label = st.selectbox(
+        "Search or select a player",
+        options=list(player_options.keys()),
+        index=None,
+        placeholder="Start typing a name...",
+        key="scoring_player_select",
+    )
+
+    if selected_label:
+        pid = player_options[selected_label]
+
+        # Fetch full profile
+        profile_df = session.sql(f"""
+            SELECT *
+            FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+            WHERE PLAYER_ID = {pid}
+        """).to_pandas()
+
+        if profile_df.empty:
+            st.warning("Player not found.")
+        else:
+            row = profile_df.iloc[0]
+
+            # --- Profile card ---
+            st.markdown("---")
+            col_profile, col_stats = st.columns(2)
+
+            with col_profile:
+                st.markdown(f"**{row['PLAYER_NAME']}** · `{row['PLAYER_CODE']}`")
+                st.markdown(
+                    f"📍 {row['CITY']} · {row['POSTCODE']}  \n"
+                    f"🎂 Age group: {row['AGE_GROUP']}  \n"
+                    f"📅 Subscriber since {str(row['SUBSCRIPTION_START'])[:10]} "
+                    f"({int(row['TENURE_MONTHS'])} months)"
+                )
+
+            with col_stats:
+                seg_raw = row["PLAYER_SEGMENT_JSON"]
+                try:
+                    seg = json.loads(seg_raw)["label"] if isinstance(seg_raw, str) else seg_raw.get("label", str(seg_raw))
+                except Exception:
+                    seg = str(seg_raw)
+
+                st.markdown(
+                    f"**Status:** {row['STATUS']}  \n"
+                    f"**Segment:** {seg}  \n"
+                    f"**Ticket:** {row['TICKET_TYPE']} · €{int(row['MONTHLY_SPEND'])}/mo  \n"
+                    f"**Lifetime value:** €{int(row['ESTIMATED_LIFETIME_VALUE']):,}  \n"
+                    f"**Charity contribution:** €{int(row['CHARITY_CONTRIBUTION']):,}  \n"
+                    f"**Sentiment:** {float(row['FEEDBACK_SENTIMENT']):.2f}"
+                )
+
+            # Feedback quote
+            fb = row["FEEDBACK_TEXT"]
+            if fb and fb != "No feedback provided.":
+                st.info(f"💬  *\"{fb}\"*")
+
+            # --- Score button ---
+            st.markdown("---")
+            if st.button("🎯 Score this Player", type="primary", key="score_btn"):
+
+                with st.spinner("Running AI inference via Cortex COMPLETE..."):
+
+                    # Build a structured prompt for the LLM scoring model
+                    prompt = f"""You are a churn-risk scoring model for the Dutch Postcode Loterij.
+
+Analyze this player profile and return a JSON object with exactly these keys:
+- churn_risk_score: integer 0-100 (100 = certain to churn)
+- risk_level: one of "Low", "Medium", "High", "Critical"
+- top_factors: array of 3 short risk factor strings
+- retention_action: one concrete recommended action (1 sentence)
+- confidence: float 0.0-1.0
+
+Player profile:
+- Name: {row['PLAYER_NAME']}
+- Status: {row['STATUS']}
+- City: {row['CITY']}
+- Age group: {row['AGE_GROUP']}
+- Tenure: {int(row['TENURE_MONTHS'])} months
+- Ticket type: {row['TICKET_TYPE']} (€{int(row['MONTHLY_SPEND'])}/month)
+- Acquisition channel: {row['ACQUISITION_CHANNEL']}
+- AI segment: {seg}
+- Sentiment score: {float(row['FEEDBACK_SENTIMENT']):.2f}
+- Lifetime value: €{int(row['ESTIMATED_LIFETIME_VALUE']):,}
+- Feedback: "{fb}"
+
+Return ONLY the JSON object, no explanation."""
+
+                    scoring_df = session.sql(
+                        "SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', ?) AS RESULT",
+                        params=[prompt],
+                    ).to_pandas()
+
+                    raw_result = scoring_df.iloc[0]["RESULT"]
+
+                    # Parse JSON from LLM response
+                    try:
+                        # Strip markdown fences if present
+                        clean = raw_result.strip()
+                        if clean.startswith("```"):
+                            clean = clean.split("\n", 1)[1]
+                            clean = clean.rsplit("```", 1)[0]
+                        score_data = json.loads(clean)
+                    except Exception:
+                        score_data = None
+
+                    if score_data:
+                        risk_score = score_data.get("churn_risk_score", "?")
+                        risk_level = score_data.get("risk_level", "Unknown")
+                        factors = score_data.get("top_factors", [])
+                        action = score_data.get("retention_action", "N/A")
+                        confidence = score_data.get("confidence", 0)
+
+                        # Color-coded risk display
+                        risk_colors = {
+                            "Low": PL_GREEN,
+                            "Medium": PL_ORANGE,
+                            "High": PL_RED,
+                            "Critical": PL_DARK_RED,
+                        }
+                        color = risk_colors.get(risk_level, "#666")
+
+                        st.markdown(
+                            f'<div style="background:{color};color:white;padding:1rem 1.5rem;'
+                            f'border-radius:10px;font-size:1.3rem;font-weight:bold;'
+                            f'text-align:center;margin:0.5rem 0;">'
+                            f'Churn Risk: {risk_score}/100 — {risk_level}'
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.markdown("**Top Risk Factors**")
+                            for f in factors:
+                                st.markdown(f"- {f}")
+                        with c2:
+                            st.markdown("**Recommended Action**")
+                            st.markdown(action)
+                            st.caption(f"Model confidence: {confidence:.0%}")
+
+                    else:
+                        st.warning("Could not parse model response. Raw output:")
+                        st.code(raw_result)
+
+            # --- How it works callout ---
+            st.markdown("---")
+            st.markdown(
+                f'<div style="background:#f0f7ff;border-left:4px solid {PL_BLUE};'
+                f'padding:1rem 1.2rem;border-radius:6px;margin-top:0.5rem;">'
+                f"<strong>💡 How does this work?</strong><br><br>"
+                f"<code>SNOWFLAKE.CORTEX.COMPLETE</code> turns any supported LLM "
+                f"into a real-time scoring engine with a single SQL call:<br><br>"
+                f"<b>1.</b> The app fetches the player's enriched profile from "
+                f"<code>PLAYER_INTELLIGENCE</code><br>"
+                f"<b>2.</b> It builds a structured prompt with the player's segment, "
+                f"sentiment, tenure, spend, and feedback<br>"
+                f"<b>3.</b> <code>CORTEX.COMPLETE</code> sends the prompt to the LLM "
+                f"and returns a JSON risk assessment<br>"
+                f"<b>4.</b> The app parses the JSON and renders the result as a "
+                f"color-coded risk banner<br><br>"
+                f"No model training. No deployment pipeline. No data movement. "
+                f"Your data stays in Snowflake and the LLM comes to it.</div>",
+                unsafe_allow_html=True,
+            )
 ```
 
 ### 3.4 Run the App
@@ -1345,7 +1527,8 @@ You should see:
 - A **red branded header** with the PL logo and title
 - **Four tabs**: Player Dashboard, Winner Draft, AI Assistant, AI Player Scoring
 - The Player Dashboard tab loaded with KPI cards and charts
-- The AI Assistant and AI Player Scoring tabs show placeholders — you'll unlock them in Module 5
+- The AI Assistant tab shows a placeholder — you'll unlock it in Module 5
+- The AI Player Scoring tab is live — try selecting a player and scoring them
 
 > **Troubleshooting**:
 >
@@ -1356,6 +1539,7 @@ You should see:
 > | Charts show but no data | Make sure the AI enrichment query (Step 2.6) completed successfully |
 > | App shows a blank screen or won't load | Click **Run** again. If it still fails, check that `environment.yml` has the exact content from Step 3.2 |
 > | `Syntax error` in the code | Make sure you copied the *entire* code block from Step 3.3 — partial copies cause errors |
+> | `Unknown model` error on scoring tab | Replace `'claude-3-5-sonnet'` in the Tab 4 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
 
 > **Snowflake Concept — Streamlit in Snowflake (SiS):**
 >
@@ -1404,13 +1588,29 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 
 > **What's coming in Module 5**: Instead of a chatbot with hardcoded context, you'll build a Cortex Agent that dynamically generates SQL from natural language. The agent reads a Semantic View (a business-friendly data dictionary) and writes accurate queries on the fly — no manual prompt engineering needed.
 
-### 4.4 AI Player Scoring (Preview)
+### 4.4 AI Player Scoring
 
 1. Click the **AI Player Scoring** tab
-2. You'll see a placeholder message — this tab will also come alive in **Module 5**
-3. After completing Module 5, you'll be able to select any player and get a **real-time AI churn risk assessment** powered by `CORTEX.COMPLETE`
+2. Use the **dropdown** to search for a player — start typing a name (e.g., "Jan" or "Sophie")
+3. Review the **player profile card** — you should see their segment, sentiment, lifetime value, and feedback
+4. Click the **"Score this Player"** button
+5. Wait a few seconds — the LLM is analyzing the player profile and generating a structured risk assessment
+6. You should see:
+   - A **color-coded risk banner** (green = Low, orange = Medium, red = High/Critical)
+   - **Top 3 risk factors** explaining why the player might churn
+   - A **recommended retention action** — a concrete suggestion for what to do next
+   - **Model confidence** — how confident the LLM is in its assessment
+7. Try scoring **different player types** — compare an Active player vs a Churned player, or a High-Value Loyal vs an At-Risk player. Notice how the risk scores and factors change
 
-> **What's coming in Module 5**: This tab uses the same LLM function (`CORTEX.COMPLETE`) you saw in Module 2 for generating retention messages — but here it acts as a **real-time scoring model**. You send it a player profile and it returns a structured risk score, no model training, no deployment pipeline, just a SQL function call.
+> **How it works**: This tab uses the same LLM function (`CORTEX.COMPLETE`) you saw in Module 2 for generating retention messages — but here it acts as a **real-time scoring model**. You send it a player profile and it returns a structured risk score, no model training, no deployment pipeline, just a SQL function call.
+
+> **Troubleshooting**:
+>
+> | Problem | Fix |
+> |---------|-----|
+> | `Unknown model` error | Replace `'claude-3-5-sonnet'` in the Tab 4 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
+> | Score button does nothing | Make sure you selected a player from the dropdown first |
+> | `Could not parse model response` | The LLM occasionally returns malformed JSON. Click "Score this Player" again — it usually works on retry |
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
@@ -1796,14 +1996,9 @@ from snowflake.snowpark.context import get_active_session
        st.subheader("AI Assistant")
        st.info("Complete **Module 5** to unlock the AI Assistant. "
                ...
-   # ============================================================
-   # TAB 4: AI PLAYER SCORING (placeholder — unlocked in Module 5)
-   # ============================================================
-   with tab4:
-       ...
    ```
 
-   **Select and delete everything** from the `# ====` comment line above `# TAB 3` all the way to the end of the file (including the Tab 4 placeholder). Then **paste** the following code in its place:
+   **Select and delete** the entire Tab 3 placeholder block — from the `# ====` comment line above `# TAB 3` down to (but **not including**) the `# ====` comment line above `# TAB 4`. Then **paste** the following code in its place:
 
 ```python
 # ============================================================
@@ -1956,210 +2151,9 @@ with tab3:
                         response = f"Could not reach the Cortex Agent. Error: {e}"
                     st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
-
-# ============================================================
-# TAB 4: AI PLAYER SCORING
-# ============================================================
-with tab4:
-
-    st.markdown("### AI Player Scoring")
-    st.markdown(
-        "Select any player and get a **real-time AI churn-risk assessment** "
-        "powered by `SNOWFLAKE.CORTEX.COMPLETE`. No model training, no "
-        "infrastructure — just a SQL function call that turns any LLM into "
-        "a scoring engine."
-    )
-
-    # --- Player selector ---
-    player_list_df = session.sql("""
-        SELECT PLAYER_ID, PLAYER_NAME, CITY, STATUS
-        FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
-        ORDER BY PLAYER_NAME
-    """).to_pandas()
-
-    player_options = {
-        f"{row['PLAYER_NAME']}  —  {row['CITY']} ({row['STATUS']})": row["PLAYER_ID"]
-        for _, row in player_list_df.iterrows()
-    }
-
-    selected_label = st.selectbox(
-        "Search or select a player",
-        options=list(player_options.keys()),
-        index=None,
-        placeholder="Start typing a name...",
-        key="scoring_player_select",
-    )
-
-    if selected_label:
-        pid = player_options[selected_label]
-
-        # Fetch full profile
-        profile_df = session.sql(f"""
-            SELECT *
-            FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
-            WHERE PLAYER_ID = {pid}
-        """).to_pandas()
-
-        if profile_df.empty:
-            st.warning("Player not found.")
-        else:
-            row = profile_df.iloc[0]
-
-            # --- Profile card ---
-            st.markdown("---")
-            col_profile, col_stats = st.columns(2)
-
-            with col_profile:
-                st.markdown(f"**{row['PLAYER_NAME']}** · `{row['PLAYER_CODE']}`")
-                st.markdown(
-                    f"📍 {row['CITY']} · {row['POSTCODE']}  \n"
-                    f"🎂 Age group: {row['AGE_GROUP']}  \n"
-                    f"📅 Subscriber since {str(row['SUBSCRIPTION_START'])[:10]} "
-                    f"({int(row['TENURE_MONTHS'])} months)"
-                )
-
-            with col_stats:
-                seg_raw = row["PLAYER_SEGMENT_JSON"]
-                try:
-                    seg = json.loads(seg_raw)["label"] if isinstance(seg_raw, str) else seg_raw.get("label", str(seg_raw))
-                except Exception:
-                    seg = str(seg_raw)
-
-                st.markdown(
-                    f"**Status:** {row['STATUS']}  \n"
-                    f"**Segment:** {seg}  \n"
-                    f"**Ticket:** {row['TICKET_TYPE']} · €{int(row['MONTHLY_SPEND'])}/mo  \n"
-                    f"**Lifetime value:** €{int(row['ESTIMATED_LIFETIME_VALUE']):,}  \n"
-                    f"**Charity contribution:** €{int(row['CHARITY_CONTRIBUTION']):,}  \n"
-                    f"**Sentiment:** {float(row['FEEDBACK_SENTIMENT']):.2f}"
-                )
-
-            # Feedback quote
-            fb = row["FEEDBACK_TEXT"]
-            if fb and fb != "No feedback provided.":
-                st.info(f"💬  *\"{fb}\"*")
-
-            # --- Score button ---
-            st.markdown("---")
-            if st.button("🎯 Score this Player", type="primary", key="score_btn"):
-
-                with st.spinner("Running AI inference via Cortex COMPLETE..."):
-
-                    # Build a structured prompt for the LLM scoring model
-                    prompt = f"""You are a churn-risk scoring model for the Dutch Postcode Loterij.
-
-Analyze this player profile and return a JSON object with exactly these keys:
-- churn_risk_score: integer 0-100 (100 = certain to churn)
-- risk_level: one of "Low", "Medium", "High", "Critical"
-- top_factors: array of 3 short risk factor strings
-- retention_action: one concrete recommended action (1 sentence)
-- confidence: float 0.0-1.0
-
-Player profile:
-- Name: {row['PLAYER_NAME']}
-- Status: {row['STATUS']}
-- City: {row['CITY']}
-- Age group: {row['AGE_GROUP']}
-- Tenure: {int(row['TENURE_MONTHS'])} months
-- Ticket type: {row['TICKET_TYPE']} (€{int(row['MONTHLY_SPEND'])}/month)
-- Acquisition channel: {row['ACQUISITION_CHANNEL']}
-- AI segment: {seg}
-- Sentiment score: {float(row['FEEDBACK_SENTIMENT']):.2f}
-- Lifetime value: €{int(row['ESTIMATED_LIFETIME_VALUE']):,}
-- Feedback: "{fb}"
-
-Return ONLY the JSON object, no explanation."""
-
-                    scoring_df = session.sql(
-                        "SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', ?) AS RESULT",
-                        params=[prompt],
-                    ).to_pandas()
-
-                    raw_result = scoring_df.iloc[0]["RESULT"]
-
-                    # Parse JSON from LLM response
-                    try:
-                        # Strip markdown fences if present
-                        clean = raw_result.strip()
-                        if clean.startswith("```"):
-                            clean = clean.split("\n", 1)[1]
-                            clean = clean.rsplit("```", 1)[0]
-                        score_data = json.loads(clean)
-                    except Exception:
-                        score_data = None
-
-                    if score_data:
-                        risk_score = score_data.get("churn_risk_score", "?")
-                        risk_level = score_data.get("risk_level", "Unknown")
-                        factors = score_data.get("top_factors", [])
-                        action = score_data.get("retention_action", "N/A")
-                        confidence = score_data.get("confidence", 0)
-
-                        # Color-coded risk display
-                        risk_colors = {
-                            "Low": PL_GREEN,
-                            "Medium": PL_ORANGE,
-                            "High": PL_RED,
-                            "Critical": PL_DARK_RED,
-                        }
-                        color = risk_colors.get(risk_level, "#666")
-
-                        st.markdown(
-                            f'<div style="background:{color};color:white;padding:1rem 1.5rem;'
-                            f'border-radius:10px;font-size:1.3rem;font-weight:bold;'
-                            f'text-align:center;margin:0.5rem 0;">'
-                            f'Churn Risk: {risk_score}/100 — {risk_level}'
-                            f"</div>",
-                            unsafe_allow_html=True,
-                        )
-
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            st.markdown("**Top Risk Factors**")
-                            for f in factors:
-                                st.markdown(f"- {f}")
-                        with c2:
-                            st.markdown("**Recommended Action**")
-                            st.markdown(action)
-                            st.caption(f"Model confidence: {confidence:.0%}")
-
-                    else:
-                        st.warning("Could not parse model response. Raw output:")
-                        st.code(raw_result)
-
-            # --- How it works callout ---
-            st.markdown("---")
-            st.markdown(
-                f'<div style="background:#f0f7ff;border-left:4px solid {PL_BLUE};'
-                f'padding:1rem 1.2rem;border-radius:6px;margin-top:0.5rem;">'
-                f"<strong>💡 How does this work?</strong><br><br>"
-                f"<code>SNOWFLAKE.CORTEX.COMPLETE</code> turns any supported LLM "
-                f"into a real-time scoring engine with a single SQL call:<br><br>"
-                f"<b>1.</b> The app fetches the player's enriched profile from "
-                f"<code>PLAYER_INTELLIGENCE</code><br>"
-                f"<b>2.</b> It builds a structured prompt with the player's segment, "
-                f"sentiment, tenure, spend, and feedback<br>"
-                f"<b>3.</b> <code>CORTEX.COMPLETE</code> sends the prompt to the LLM "
-                f"and returns a JSON risk assessment<br>"
-                f"<b>4.</b> The app parses the JSON and renders the result as a "
-                f"color-coded risk banner<br><br>"
-                f"No model training. No deployment pipeline. No data movement. "
-                f"Your data stays in Snowflake and the LLM comes to it.</div>",
-                unsafe_allow_html=True,
-            )
 ```
 
 4. Click **Run** to reload the app
-
-> **Snowflake Concept — How the AI Player Scoring Tab Works:**
->
-> This tab demonstrates **real-time AI inference** using `SNOWFLAKE.CORTEX.COMPLETE`:
-> 1. **Select a player** from the dropdown — this runs a simple SQL query to fetch their enriched profile from `PLAYER_INTELLIGENCE`
-> 2. **Click "Score this Player"** — the app builds a structured prompt containing all the player's attributes (segment, sentiment, tenure, spend, feedback)
-> 3. **Cortex COMPLETE processes the prompt** — the LLM acts as a scoring model, analyzing the player profile and returning a structured JSON response with a churn risk score, risk level, contributing factors, and a recommended retention action
-> 4. **The app parses and displays the result** — the JSON response is rendered as a color-coded risk banner with actionable insights
->
-> No model training. No deployment pipeline. No data movement. Your data stays in Snowflake and the LLM comes to it. The "How does this work?" callout at the bottom of the tab summarizes this flow for quick reference.
 
 > **Snowflake Concept — How the Agent Chatbot Works:**
 >
@@ -2192,34 +2186,9 @@ Now try the AI Assistant in your app:
 > | `403 Forbidden` | Check that the Streamlit app was created with the correct compute pool and EAI in Step 5.5 |
 > | Agent returns empty responses | Verify the agent exists: `SHOW AGENTS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;` |
 > | App shows a loading error | Make sure you ran all three SQL blocks in Step 5.5 and that the compute pool is running: `SHOW COMPUTE POOLS;` |
-> | `Syntax error` after pasting the code | Make sure you replaced the entire Tab 3 and Tab 4 blocks, and that the imports at the top include `os` and `requests` |
+> | `Syntax error` after pasting the code | Make sure you replaced only the Tab 3 placeholder block, and that the imports at the top include `os` and `requests` |
 
-### 5.9 Test the AI Player Scoring
-
-Now try the AI Player Scoring tab:
-
-1. Click the **AI Player Scoring** tab
-2. Use the **dropdown** to search for a player — start typing a name (e.g., "Jan" or "Sophie")
-3. Review the **player profile card** — you should see their segment, sentiment, lifetime value, and feedback
-4. Click the **"Score this Player"** button
-5. Wait a few seconds — the LLM is analyzing the player profile and generating a structured risk assessment
-6. You should see:
-   - A **color-coded risk banner** (green = Low, orange = Medium, red = High/Critical)
-   - **Top 3 risk factors** explaining why the player might churn
-   - A **recommended retention action** — a concrete suggestion for what to do next
-   - **Model confidence** — how confident the LLM is in its assessment
-7. Try scoring **different player types** — compare an Active player vs a Churned player, or a High-Value Loyal vs an At-Risk player. Notice how the risk scores and factors change
-8. Scroll down to see the **"How does this work?"** callout — it explains the full flow from player selection to risk score in four steps
-
-> **Troubleshooting**:
->
-> | Problem | Fix |
-> |---------|-----|
-> | `Unknown model` error | Replace `'claude-3-5-sonnet'` in the Tab 4 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
-> | Score button does nothing | Make sure you selected a player from the dropdown first |
-> | `Could not parse model response` | The LLM occasionally returns malformed JSON. Click "Score this Player" again — it usually works on retry |
-
-### 5.10 What You Just Built
+### 5.9 What You Just Built
 
 You created a complete AI analytics stack — from raw data to a conversational interface:
 
