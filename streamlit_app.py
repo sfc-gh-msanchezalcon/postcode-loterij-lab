@@ -266,7 +266,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -- Navigation --
-tab1, tab2, tab3, tab4 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant", "AI Player Scoring"])
+tab1, tab2, tab3, tab4 = st.tabs(["Player Dashboard", "Winner Draft", "AI Player Scoring", "AI Assistant"])
 
 # ============================================================
 # TAB 1: PLAYER DASHBOARD
@@ -486,160 +486,9 @@ with tab2:
 
 
 # ============================================================
-# TAB 3: AI ASSISTANT
+# TAB 3: AI PLAYER SCORING
 # ============================================================
 with tab3:
-
-    st.subheader("Ask questions about player data and charity impact")
-    st.caption("Powered by Cortex Agent + Semantic View — your data never leaves Snowflake")
-
-    # ---- Cortex Agent helpers ----
-    AGENT_ENDPOINT = (
-        "/api/v2/databases/POSTCODE_LOTERIJ_AI/schemas/ANALYTICS"
-        "/agents/LOTERIJ_AGENT:run"
-    )
-
-    def get_agent_token():
-        """Read the SPCS session token for authenticated API calls."""
-        with open("/snowflake/session/token", "r") as f:
-            return f.read().strip()
-
-    def call_agent(prompt, conversation_history=None):
-        """Call the Cortex Agent API and return the full response text."""
-        token = get_agent_token()
-        host = os.environ.get("SNOWFLAKE_HOST", "")
-        url = f"https://{host}{AGENT_ENDPOINT}"
-
-        messages = []
-        if conversation_history:
-            for m in conversation_history:
-                messages.append({
-                    "role": m["role"],
-                    "content": [{"type": "text", "text": m["content"]}],
-                })
-        messages.append({
-            "role": "user",
-            "content": [{"type": "text", "text": prompt}],
-        })
-
-        payload = {"messages": messages, "stream": True}
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "X-Snowflake-Authorization-Token-Type": "OAUTH",
-            "Content-Type": "application/json",
-            "Accept": "text/event-stream",
-        }
-
-        response_text = ""
-        current_event = ""
-        with requests.post(url, json=payload, headers=headers, stream=True) as r:
-            r.raise_for_status()
-            for raw_line in r.iter_lines():
-                if not raw_line:
-                    continue
-                line = raw_line.decode("utf-8")
-                # Track the SSE event type
-                if line.startswith("event:"):
-                    current_event = line[len("event:"):].strip()
-                    continue
-                if line.startswith("data: "):
-                    data_str = line[len("data: "):]
-                elif line.startswith("data:"):
-                    data_str = line[len("data:"):]
-                else:
-                    continue
-                data_str = data_str.strip()
-                if data_str == "[DONE]":
-                    break
-                # Only capture the final response text, skip reasoning/thinking
-                if current_event not in ("response.text.delta", ""):
-                    continue
-                try:
-                    event = json.loads(data_str)
-                    if "text" in event:
-                        response_text += event["text"]
-                    elif "delta" in event:
-                        delta = event["delta"]
-                        for item in delta.get("content", []):
-                            if item.get("type") == "text":
-                                response_text += item.get("text", "")
-                except json.JSONDecodeError:
-                    continue
-        return response_text
-
-    # ---- Suggestion prompts ----
-    SUGGESTIONS = {
-        "Segments": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
-        "Charity": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
-        "Churn": "What can you tell me about churn patterns? What strategies would you recommend to reduce churn?",
-        "Growth": "What are the top 3 growth opportunities based on the player data?",
-    }
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    # Clear chat button (only show when there are messages)
-    if st.session_state.messages:
-        if st.button("Clear chat", key="clear_chat"):
-            st.session_state.messages = []
-            st.rerun()
-
-    # Suggestion buttons (two rows of two)
-    if not st.session_state.messages:
-        st.write("**Try one of these questions:**")
-        items = list(SUGGESTIONS.items())
-        row1 = st.columns(2)
-        for i in range(2):
-            with row1[i]:
-                if st.button(items[i][0], use_container_width=True):
-                    st.session_state.messages.append({"role": "user", "content": items[i][1]})
-                    st.rerun()
-        row2 = st.columns(2)
-        for i in range(2, 4):
-            with row2[i - 2]:
-                if st.button(items[i][0], use_container_width=True):
-                    st.session_state.messages.append({"role": "user", "content": items[i][1]})
-                    st.rerun()
-
-    # Chat container — fixed height only when there are messages to scroll
-    if st.session_state.messages:
-        chat_container = st.container(height=500)
-    else:
-        chat_container = st.container()
-
-    # Chat history
-    with chat_container:
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-
-    # Chat input (outside container so it stays pinned below)
-    if prompt := st.chat_input("Ask about players, charities, or performance..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with chat_container:
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-    # Process pending user message via Cortex Agent
-    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-        with chat_container:
-            with st.chat_message("assistant"):
-                with st.spinner("Agent is querying your data..."):
-                    history = st.session_state.messages[:-1]
-                    user_msg = st.session_state.messages[-1]["content"]
-                    try:
-                        response = call_agent(user_msg, history)
-                        if not response.strip():
-                            response = "The agent returned an empty response. Try rephrasing your question."
-                    except Exception as e:
-                        response = f"Could not reach the Cortex Agent. Error: {e}"
-                    st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
-
-# ============================================================
-# TAB 4: AI PLAYER SCORING
-# ============================================================
-with tab4:
 
     st.markdown("### AI Player Scoring")
     st.markdown(
@@ -826,3 +675,155 @@ Return ONLY the JSON object, no explanation."""
                 f"Your data stays in Snowflake and the LLM comes to it.</div>",
                 unsafe_allow_html=True,
             )
+
+
+# ============================================================
+# TAB 4: AI ASSISTANT
+# ============================================================
+with tab4:
+
+    st.subheader("Ask questions about player data and charity impact")
+    st.caption("Powered by Cortex Agent + Semantic View — your data never leaves Snowflake")
+
+    # ---- Cortex Agent helpers ----
+    AGENT_ENDPOINT = (
+        "/api/v2/databases/POSTCODE_LOTERIJ_AI/schemas/ANALYTICS"
+        "/agents/LOTERIJ_AGENT:run"
+    )
+
+    def get_agent_token():
+        """Read the SPCS session token for authenticated API calls."""
+        with open("/snowflake/session/token", "r") as f:
+            return f.read().strip()
+
+    def call_agent(prompt, conversation_history=None):
+        """Call the Cortex Agent API and return the full response text."""
+        token = get_agent_token()
+        host = os.environ.get("SNOWFLAKE_HOST", "")
+        url = f"https://{host}{AGENT_ENDPOINT}"
+
+        messages = []
+        if conversation_history:
+            for m in conversation_history:
+                messages.append({
+                    "role": m["role"],
+                    "content": [{"type": "text", "text": m["content"]}],
+                })
+        messages.append({
+            "role": "user",
+            "content": [{"type": "text", "text": prompt}],
+        })
+
+        payload = {"messages": messages, "stream": True}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Snowflake-Authorization-Token-Type": "OAUTH",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+        }
+
+        response_text = ""
+        current_event = ""
+        with requests.post(url, json=payload, headers=headers, stream=True) as r:
+            r.raise_for_status()
+            for raw_line in r.iter_lines():
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8")
+                # Track the SSE event type
+                if line.startswith("event:"):
+                    current_event = line[len("event:"):].strip()
+                    continue
+                if line.startswith("data: "):
+                    data_str = line[len("data: "):]
+                elif line.startswith("data:"):
+                    data_str = line[len("data:"):]
+                else:
+                    continue
+                data_str = data_str.strip()
+                if data_str == "[DONE]":
+                    break
+                # Only capture the final response text, skip reasoning/thinking
+                if current_event not in ("response.text.delta", ""):
+                    continue
+                try:
+                    event = json.loads(data_str)
+                    if "text" in event:
+                        response_text += event["text"]
+                    elif "delta" in event:
+                        delta = event["delta"]
+                        for item in delta.get("content", []):
+                            if item.get("type") == "text":
+                                response_text += item.get("text", "")
+                except json.JSONDecodeError:
+                    continue
+        return response_text
+
+    # ---- Suggestion prompts ----
+    SUGGESTIONS = {
+        "Segments": "What are the key characteristics of each player segment? Which segment should we focus retention efforts on?",
+        "Charity": "How is our charity funding distributed? Which categories receive the most and what is the total impact?",
+        "Churn": "What can you tell me about churn patterns? What strategies would you recommend to reduce churn?",
+        "Growth": "What are the top 3 growth opportunities based on the player data?",
+    }
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Clear chat button (only show when there are messages)
+    if st.session_state.messages:
+        if st.button("Clear chat", key="clear_chat"):
+            st.session_state.messages = []
+            st.rerun()
+
+    # Suggestion buttons (two rows of two)
+    if not st.session_state.messages:
+        st.write("**Try one of these questions:**")
+        items = list(SUGGESTIONS.items())
+        row1 = st.columns(2)
+        for i in range(2):
+            with row1[i]:
+                if st.button(items[i][0], use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": items[i][1]})
+                    st.rerun()
+        row2 = st.columns(2)
+        for i in range(2, 4):
+            with row2[i - 2]:
+                if st.button(items[i][0], use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": items[i][1]})
+                    st.rerun()
+
+    # Chat container — fixed height only when there are messages to scroll
+    if st.session_state.messages:
+        chat_container = st.container(height=500)
+    else:
+        chat_container = st.container()
+
+    # Chat history
+    with chat_container:
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+    # Chat input (outside container so it stays pinned below)
+    if prompt := st.chat_input("Ask about players, charities, or performance..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+    # Process pending user message via Cortex Agent
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner("Agent is querying your data..."):
+                    history = st.session_state.messages[:-1]
+                    user_msg = st.session_state.messages[-1]["content"]
+                    try:
+                        response = call_agent(user_msg, history)
+                        if not response.strip():
+                            response = "The agent returned an empty response. Try rephrasing your question."
+                    except Exception as e:
+                        response = f"Could not reach the Cortex Agent. Error: {e}"
+                    st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})

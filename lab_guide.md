@@ -1098,7 +1098,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["Player Dashboard", "Winner Draft", "AI Assistant", "AI Player Scoring"])
+tab1, tab2, tab3, tab4 = st.tabs(["Player Dashboard", "Winner Draft", "AI Player Scoring", "AI Assistant"])
 
 # ============================================================
 # TAB 1: PLAYER DASHBOARD
@@ -1318,19 +1318,9 @@ with tab2:
 
 
 # ============================================================
-# TAB 3: AI ASSISTANT (placeholder — unlocked in Module 5)
+# TAB 3: AI PLAYER SCORING
 # ============================================================
 with tab3:
-    st.subheader("AI Assistant")
-    st.info("Complete **Module 5** to unlock the AI Assistant. "
-            "You will create a Semantic View and Cortex Agent, "
-            "then connect them to this tab.")
-
-
-# ============================================================
-# TAB 4: AI PLAYER SCORING
-# ============================================================
-with tab4:
 
     st.markdown("### AI Player Scoring")
     st.markdown(
@@ -1517,6 +1507,16 @@ Return ONLY the JSON object, no explanation."""
                 f"Your data stays in Snowflake and the LLM comes to it.</div>",
                 unsafe_allow_html=True,
             )
+
+
+# ============================================================
+# TAB 4: AI ASSISTANT (placeholder — unlocked in Module 5)
+# ============================================================
+with tab4:
+    st.subheader("AI Assistant")
+    st.info("Complete **Module 5** to unlock the AI Assistant. "
+            "You will create a Semantic View and Cortex Agent, "
+            "then connect them to this tab.")
 ```
 
 ### 3.4 Run the App
@@ -1525,10 +1525,10 @@ Click the **Run** button (blue play icon, top right of the editor). The app shou
 
 You should see:
 - A **red branded header** with the PL logo and title
-- **Four tabs**: Player Dashboard, Winner Draft, AI Assistant, AI Player Scoring
+- **Four tabs**: Player Dashboard, Winner Draft, AI Player Scoring, AI Assistant
 - The Player Dashboard tab loaded with KPI cards and charts
-- The AI Assistant tab shows a placeholder — you'll unlock it in Module 5
 - The AI Player Scoring tab is live — try selecting a player and scoring them
+- The AI Assistant tab shows a placeholder — you'll unlock it in Module 5
 
 > **Troubleshooting**:
 >
@@ -1539,7 +1539,7 @@ You should see:
 > | Charts show but no data | Make sure the AI enrichment query (Step 2.6) completed successfully |
 > | App shows a blank screen or won't load | Click **Run** again. If it still fails, check that `environment.yml` has the exact content from Step 3.2 |
 > | `Syntax error` in the code | Make sure you copied the *entire* code block from Step 3.3 — partial copies cause errors |
-> | `Unknown model` error on scoring tab | Replace `'claude-3-5-sonnet'` in the Tab 4 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
+> | `Unknown model` error on scoring tab | Replace `'claude-3-5-sonnet'` in the Tab 3 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
 
 > **Snowflake Concept — Streamlit in Snowflake (SiS):**
 >
@@ -1580,15 +1580,7 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 
 > **This mirrors reality**: In the real Postcode Loterij, all neighbours who share a winning postcode win together. The prize pool is split among them. That's the "samen winnen" (winning together) concept.
 
-### 4.3 AI Assistant (Preview)
-
-1. Click the **AI Assistant** tab
-2. You'll see a placeholder message — this tab will come alive in **Module 5**
-3. After completing Module 5, you'll be able to ask natural language questions and the **Cortex Agent** will query your data in real time using the Semantic View you create
-
-> **What's coming in Module 5**: Instead of a chatbot with hardcoded context, you'll build a Cortex Agent that dynamically generates SQL from natural language. The agent reads a Semantic View (a business-friendly data dictionary) and writes accurate queries on the fly — no manual prompt engineering needed.
-
-### 4.4 AI Player Scoring
+### 4.3 AI Player Scoring
 
 1. Click the **AI Player Scoring** tab
 2. Use the **dropdown** to search for a player — start typing a name (e.g., "Jan" or "Sophie")
@@ -1608,9 +1600,17 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 >
 > | Problem | Fix |
 > |---------|-----|
-> | `Unknown model` error | Replace `'claude-3-5-sonnet'` in the Tab 4 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
+> | `Unknown model` error | Replace `'claude-3-5-sonnet'` in the Tab 3 code with `'mistral-large2'`. Test with: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');` |
 > | Score button does nothing | Make sure you selected a player from the dropdown first |
 > | `Could not parse model response` | The LLM occasionally returns malformed JSON. Click "Score this Player" again — it usually works on retry |
+
+### 4.4 AI Assistant (Preview)
+
+1. Click the **AI Assistant** tab
+2. You'll see a placeholder message — this tab will come alive in **Module 5**
+3. After completing Module 5, you'll be able to ask natural language questions and the **Cortex Agent** will query your data in real time using the Semantic View you create
+
+> **What's coming in Module 5**: Instead of a chatbot with hardcoded context, you'll build a Cortex Agent that dynamically generates SQL from natural language. The agent reads a Semantic View (a business-friendly data dictionary) and writes accurate queries on the fly — no manual prompt engineering needed.
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
@@ -1968,9 +1968,9 @@ requests
 > - `snowflake-snowpark-python` — Lets our app run SQL queries against Snowflake
 > - `requests` — Lets our app call the Cortex Agent API
 
-### 5.7 Upgrade Tab 3 — Connect the Agent
+### 5.7 Upgrade Tab 4 — Connect the Agent
 
-Now for the exciting part: replace the placeholder Tab 3 with the real Cortex Agent chatbot. 
+Now for the exciting part: replace the placeholder Tab 4 with the real Cortex Agent chatbot. 
 
 1. Click on **`streamlit_app.py`** in the file list
 2. Find the **imports** at the top of the file (lines 1-6). **Replace** them with:
@@ -1986,25 +1986,25 @@ import requests
 from snowflake.snowpark.context import get_active_session
 ```
 
-3. Find the **Tab 3 placeholder** near the bottom of the file. Use **Ctrl+F / Cmd+F** to search for `# TAB 3: AI ASSISTANT`. You should find a block that looks like this:
+3. Find the **Tab 4 placeholder** near the bottom of the file. Use **Ctrl+F / Cmd+F** to search for `# TAB 4: AI ASSISTANT`. You should find a block that looks like this:
 
    ```python
    # ============================================================
-   # TAB 3: AI ASSISTANT (placeholder — unlocked in Module 5)
+   # TAB 4: AI ASSISTANT (placeholder — unlocked in Module 5)
    # ============================================================
-   with tab3:
+   with tab4:
        st.subheader("AI Assistant")
        st.info("Complete **Module 5** to unlock the AI Assistant. "
                ...
    ```
 
-   **Select and delete** the entire Tab 3 placeholder block — from the `# ====` comment line above `# TAB 3` down to (but **not including**) the `# ====` comment line above `# TAB 4`. Then **paste** the following code in its place:
+   **Select and delete** the entire Tab 4 placeholder block — from the `# ====` comment line above `# TAB 4` to the end of the file. Then **paste** the following code in its place:
 
 ```python
 # ============================================================
-# TAB 3: AI ASSISTANT
+# TAB 4: AI ASSISTANT
 # ============================================================
-with tab3:
+with tab4:
 
     st.subheader("Ask questions about player data and charity impact")
     st.caption("Powered by Cortex Agent + Semantic View — your data never leaves Snowflake")
@@ -2186,7 +2186,7 @@ Now try the AI Assistant in your app:
 > | `403 Forbidden` | Check that the Streamlit app was created with the correct compute pool and EAI in Step 5.5 |
 > | Agent returns empty responses | Verify the agent exists: `SHOW AGENTS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;` |
 > | App shows a loading error | Make sure you ran all three SQL blocks in Step 5.5 and that the compute pool is running: `SHOW COMPUTE POOLS;` |
-> | `Syntax error` after pasting the code | Make sure you replaced only the Tab 3 placeholder block, and that the imports at the top include `os` and `requests` |
+> | `Syntax error` after pasting the code | Make sure you replaced only the Tab 4 placeholder block, and that the imports at the top include `os` and `requests` |
 
 ### 5.9 What You Just Built
 

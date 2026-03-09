@@ -57,7 +57,7 @@ A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution
 | **CORTEX.AI_CLASSIFY** | Categorize players into segments (High-Value Loyal, At-Risk, etc.) | 2 |
 | **CORTEX.AI_EXTRACT** | Pull structured fields (interests, complaints, preferences) from free-text feedback | 2 |
 | **CORTEX.SUMMARIZE** | Generate concise summaries of player feedback | 2 |
-| **CORTEX.COMPLETE** | Generate personalized retention messages and real-time AI player scoring | 2, 5 |
+| **CORTEX.COMPLETE** | Generate personalized retention messages and real-time AI player scoring | 2, 3 |
 | **Streamlit in Snowflake** | Build interactive dashboards without leaving Snowflake | 3 |
 | **Semantic View** | Define business meaning of tables (dimensions, facts, metrics) for AI | 5 |
 | **Cortex Agent** | AI orchestrator that converts natural language to SQL via your Semantic View | 5 |
