@@ -644,9 +644,9 @@ with tab4:
     st.markdown("### AI Player Scoring")
     st.markdown(
         "Select any player and get a **real-time AI churn-risk assessment** "
-        "powered by `SNOWFLAKE.CORTEX.COMPLETE` — the same pattern you'd use "
-        "with an **Amazon SageMaker real-time inference endpoint**, but with "
-        "zero infrastructure to manage."
+        "powered by `SNOWFLAKE.CORTEX.COMPLETE`. No model training, no "
+        "infrastructure — just a SQL function call that turns any LLM into "
+        "a scoring engine."
     )
 
     # --- Player selector ---
@@ -724,7 +724,7 @@ with tab4:
 
                 with st.spinner("Running AI inference via Cortex COMPLETE..."):
 
-                    # Build the prompt — mirrors what you'd send to a SageMaker endpoint
+                    # Build a structured prompt for the LLM scoring model
                     prompt = f"""You are a churn-risk scoring model for the Dutch Postcode Loterij.
 
 Analyze this player profile and return a JSON object with exactly these keys:
@@ -806,33 +806,23 @@ Return ONLY the JSON object, no explanation."""
                         st.warning("Could not parse model response. Raw output:")
                         st.code(raw_result)
 
-            # --- SageMaker comparison callout ---
+            # --- How it works callout ---
             st.markdown("---")
             st.markdown(
                 f'<div style="background:#f0f7ff;border-left:4px solid {PL_BLUE};'
                 f'padding:1rem 1.2rem;border-radius:6px;margin-top:0.5rem;">'
-                f"<strong>☁️ How does this compare to Amazon SageMaker?</strong><br>"
-                f"<table style='margin-top:0.5rem;font-size:0.9rem;border-collapse:collapse;width:100%;'>"
-                f"<tr style='border-bottom:1px solid #ddd;'>"
-                f"<td style='padding:4px 8px;'></td>"
-                f"<td style='padding:4px 8px;font-weight:bold;'>SageMaker Endpoint</td>"
-                f"<td style='padding:4px 8px;font-weight:bold;'>Snowflake Cortex</td></tr>"
-                f"<tr style='border-bottom:1px solid #eee;'>"
-                f"<td style='padding:4px 8px;'>Infrastructure</td>"
-                f"<td style='padding:4px 8px;'>Provision ML instance, deploy model artifact</td>"
-                f"<td style='padding:4px 8px;'>None — SQL function call</td></tr>"
-                f"<tr style='border-bottom:1px solid #eee;'>"
-                f"<td style='padding:4px 8px;'>Data movement</td>"
-                f"<td style='padding:4px 8px;'>Export from Snowflake → S3 → endpoint</td>"
-                f"<td style='padding:4px 8px;'>Zero — data stays in Snowflake</td></tr>"
-                f"<tr style='border-bottom:1px solid #eee;'>"
-                f"<td style='padding:4px 8px;'>Scaling</td>"
-                f"<td style='padding:4px 8px;'>Auto-scaling groups, cold starts</td>"
-                f"<td style='padding:4px 8px;'>Automatic with warehouse</td></tr>"
-                f"<tr>"
-                f"<td style='padding:4px 8px;'>Cost model</td>"
-                f"<td style='padding:4px 8px;'>Per-instance-hour (even when idle)</td>"
-                f"<td style='padding:4px 8px;'>Per-token, pay only when used</td></tr>"
-                f"</table></div>",
+                f"<strong>💡 How does this work?</strong><br><br>"
+                f"<code>SNOWFLAKE.CORTEX.COMPLETE</code> turns any supported LLM "
+                f"into a real-time scoring engine with a single SQL call:<br><br>"
+                f"<b>1.</b> The app fetches the player's enriched profile from "
+                f"<code>PLAYER_INTELLIGENCE</code><br>"
+                f"<b>2.</b> It builds a structured prompt with the player's segment, "
+                f"sentiment, tenure, spend, and feedback<br>"
+                f"<b>3.</b> <code>CORTEX.COMPLETE</code> sends the prompt to the LLM "
+                f"and returns a JSON risk assessment<br>"
+                f"<b>4.</b> The app parses the JSON and renders the result as a "
+                f"color-coded risk banner<br><br>"
+                f"No model training. No deployment pipeline. No data movement. "
+                f"Your data stays in Snowflake and the LLM comes to it.</div>",
                 unsafe_allow_html=True,
             )

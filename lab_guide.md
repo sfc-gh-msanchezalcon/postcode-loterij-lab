@@ -1410,7 +1410,7 @@ Now let's explore what you built. Take a few minutes to interact with each tab.
 2. You'll see a placeholder message — this tab will also come alive in **Module 5**
 3. After completing Module 5, you'll be able to select any player and get a **real-time AI churn risk assessment** powered by `CORTEX.COMPLETE`
 
-> **What's coming in Module 5**: This tab uses the same LLM function (`CORTEX.COMPLETE`) you saw in Module 2 for generating retention messages — but here it acts as a **real-time scoring model**. You send it a player profile and it returns a structured risk score, just like calling an Amazon SageMaker inference endpoint — but without any infrastructure to manage.
+> **What's coming in Module 5**: This tab uses the same LLM function (`CORTEX.COMPLETE`) you saw in Module 2 for generating retention messages — but here it acts as a **real-time scoring model**. You send it a player profile and it returns a structured risk score, no model training, no deployment pipeline, just a SQL function call.
 
 <p align="center"><img src="assets/divider.svg" width="80%"></p>
 
@@ -1965,9 +1965,9 @@ with tab4:
     st.markdown("### AI Player Scoring")
     st.markdown(
         "Select any player and get a **real-time AI churn-risk assessment** "
-        "powered by `SNOWFLAKE.CORTEX.COMPLETE` — the same pattern you'd use "
-        "with an **Amazon SageMaker real-time inference endpoint**, but with "
-        "zero infrastructure to manage."
+        "powered by `SNOWFLAKE.CORTEX.COMPLETE`. No model training, no "
+        "infrastructure — just a SQL function call that turns any LLM into "
+        "a scoring engine."
     )
 
     # --- Player selector ---
@@ -2045,7 +2045,7 @@ with tab4:
 
                 with st.spinner("Running AI inference via Cortex COMPLETE..."):
 
-                    # Build the prompt — mirrors what you'd send to a SageMaker endpoint
+                    # Build a structured prompt for the LLM scoring model
                     prompt = f"""You are a churn-risk scoring model for the Dutch Postcode Loterij.
 
 Analyze this player profile and return a JSON object with exactly these keys:
@@ -2127,34 +2127,24 @@ Return ONLY the JSON object, no explanation."""
                         st.warning("Could not parse model response. Raw output:")
                         st.code(raw_result)
 
-            # --- SageMaker comparison callout ---
+            # --- How it works callout ---
             st.markdown("---")
             st.markdown(
                 f'<div style="background:#f0f7ff;border-left:4px solid {PL_BLUE};'
                 f'padding:1rem 1.2rem;border-radius:6px;margin-top:0.5rem;">'
-                f"<strong>☁️ How does this compare to Amazon SageMaker?</strong><br>"
-                f"<table style='margin-top:0.5rem;font-size:0.9rem;border-collapse:collapse;width:100%;'>"
-                f"<tr style='border-bottom:1px solid #ddd;'>"
-                f"<td style='padding:4px 8px;'></td>"
-                f"<td style='padding:4px 8px;font-weight:bold;'>SageMaker Endpoint</td>"
-                f"<td style='padding:4px 8px;font-weight:bold;'>Snowflake Cortex</td></tr>"
-                f"<tr style='border-bottom:1px solid #eee;'>"
-                f"<td style='padding:4px 8px;'>Infrastructure</td>"
-                f"<td style='padding:4px 8px;'>Provision ML instance, deploy model artifact</td>"
-                f"<td style='padding:4px 8px;'>None — SQL function call</td></tr>"
-                f"<tr style='border-bottom:1px solid #eee;'>"
-                f"<td style='padding:4px 8px;'>Data movement</td>"
-                f"<td style='padding:4px 8px;'>Export from Snowflake → S3 → endpoint</td>"
-                f"<td style='padding:4px 8px;'>Zero — data stays in Snowflake</td></tr>"
-                f"<tr style='border-bottom:1px solid #eee;'>"
-                f"<td style='padding:4px 8px;'>Scaling</td>"
-                f"<td style='padding:4px 8px;'>Auto-scaling groups, cold starts</td>"
-                f"<td style='padding:4px 8px;'>Automatic with warehouse</td></tr>"
-                f"<tr>"
-                f"<td style='padding:4px 8px;'>Cost model</td>"
-                f"<td style='padding:4px 8px;'>Per-instance-hour (even when idle)</td>"
-                f"<td style='padding:4px 8px;'>Per-token, pay only when used</td></tr>"
-                f"</table></div>",
+                f"<strong>💡 How does this work?</strong><br><br>"
+                f"<code>SNOWFLAKE.CORTEX.COMPLETE</code> turns any supported LLM "
+                f"into a real-time scoring engine with a single SQL call:<br><br>"
+                f"<b>1.</b> The app fetches the player's enriched profile from "
+                f"<code>PLAYER_INTELLIGENCE</code><br>"
+                f"<b>2.</b> It builds a structured prompt with the player's segment, "
+                f"sentiment, tenure, spend, and feedback<br>"
+                f"<b>3.</b> <code>CORTEX.COMPLETE</code> sends the prompt to the LLM "
+                f"and returns a JSON risk assessment<br>"
+                f"<b>4.</b> The app parses the JSON and renders the result as a "
+                f"color-coded risk banner<br><br>"
+                f"No model training. No deployment pipeline. No data movement. "
+                f"Your data stays in Snowflake and the LLM comes to it.</div>",
                 unsafe_allow_html=True,
             )
 ```
@@ -2169,7 +2159,7 @@ Return ONLY the JSON object, no explanation."""
 > 3. **Cortex COMPLETE processes the prompt** — the LLM acts as a scoring model, analyzing the player profile and returning a structured JSON response with a churn risk score, risk level, contributing factors, and a recommended retention action
 > 4. **The app parses and displays the result** — the JSON response is rendered as a color-coded risk banner with actionable insights
 >
-> This is functionally equivalent to calling an **Amazon SageMaker real-time inference endpoint**, but without provisioning instances, managing model artifacts, or moving data out of Snowflake. The comparison table at the bottom of the tab highlights the key differences.
+> No model training. No deployment pipeline. No data movement. Your data stays in Snowflake and the LLM comes to it. The "How does this work?" callout at the bottom of the tab summarizes this flow for quick reference.
 
 > **Snowflake Concept — How the Agent Chatbot Works:**
 >
@@ -2219,7 +2209,7 @@ Now try the AI Player Scoring tab:
    - A **recommended retention action** — a concrete suggestion for what to do next
    - **Model confidence** — how confident the LLM is in its assessment
 7. Try scoring **different player types** — compare an Active player vs a Churned player, or a High-Value Loyal vs an At-Risk player. Notice how the risk scores and factors change
-8. Scroll down to see the **SageMaker comparison table** — this shows how `CORTEX.COMPLETE` compares to deploying a SageMaker real-time inference endpoint
+8. Scroll down to see the **"How does this work?"** callout — it explains the full flow from player selection to risk score in four steps
 
 > **Troubleshooting**:
 >
@@ -2317,7 +2307,7 @@ The general workflow is:
 | ✉️ | Personalized messages | `SNOWFLAKE.CORTEX.COMPLETE` | Generates custom retention copy using an LLM |
 | 📊 | Interactive dashboard | Streamlit in Snowflake | Four-tab branded dashboard with KPIs, charts, tables, and AI scoring |
 | 🤖 | AI Agent chatbot | Cortex Agent + Semantic View | Conversational assistant that queries your data in real time |
-| 🎯 | AI Player Scoring | `SNOWFLAKE.CORTEX.COMPLETE` | Real-time churn risk assessment — like a SageMaker endpoint, but zero infrastructure |
+| 🎯 | AI Player Scoring | `SNOWFLAKE.CORTEX.COMPLETE` | Real-time churn risk assessment — no model training, just a SQL function call |
 | 📐 | Semantic View | `CREATE SEMANTIC VIEW` | Business data model with dimensions, facts, and metrics |
 | 🧠 | AI Agent | `CREATE AGENT` + Cortex Analyst | Natural language to SQL — ask questions, get answers |
 | 🐳 | Container runtime | Compute Pool + SPCS | Enables REST API calls from Streamlit to the Cortex Agent |
