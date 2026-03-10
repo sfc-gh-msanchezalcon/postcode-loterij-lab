@@ -2194,7 +2194,7 @@ Now try the AI Assistant in your app:
 > | `403 Forbidden` | Check that the Streamlit app was created with the correct compute pool and EAI in Step 5.5 |
 > | Agent returns empty responses | Verify the agent exists: `SHOW AGENTS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;` |
 > | App shows a loading error | Make sure you ran all three SQL blocks in Step 5.5 and that the compute pool is running: `SHOW COMPUTE POOLS;` |
-> | `Syntax error` after pasting the code | Make sure you replaced only the Tab 4 placeholder block, and that the imports at the top include `os` and `requests` |
+> | `Syntax error` after pasting the code | Make sure you pasted the full Module 3 code first (Step 3.3), then applied both changes: the updated imports (`os` and `requests`) and the Tab 4 replacement |
 
 ### 5.9 What You Just Built
 
