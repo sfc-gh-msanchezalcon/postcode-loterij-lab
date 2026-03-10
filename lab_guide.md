@@ -57,8 +57,8 @@ By the end you will have:
     │            │ STREAMLIT APP  │  │ CORTEX   │ │      │
     │            │ Dashboard      │  │ AGENT    │ │      │
     │            │ Winner Draft   │  │ NL → SQL │ │      │
-    │            │ AI Chatbot     │  └──────────┘ │      │
-    │            │ AI Scoring     │               │      │
+    │            │ AI Scoring     │  └──────────┘ │      │
+    │            │ AI Assistant   │               │      │
     │            └────────────────┘               │      │
     │                                             │      │
     └─────────────────────────────────────────────────────┘

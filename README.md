@@ -41,8 +41,8 @@ A 1.5-hour hands-on workshop where you build an end-to-end AI analytics solution
     │            │ STREAMLIT APP  │  │ CORTEX   │ │      │
     │            │ Dashboard      │  │ AGENT    │ │      │
     │            │ Winner Draft   │  │ NL → SQL │ │      │
-    │            │ AI Chatbot     │  └──────────┘ │      │
-    │            │ AI Scoring     │               │      │
+    │            │ AI Scoring     │  └──────────┘ │      │
+    │            │ AI Assistant   │               │      │
     │            └────────────────┘               │      │
     │                                             │      │
     └─────────────────────────────────────────────────────┘
@@ -97,6 +97,7 @@ postcode_loterij_lab/
 │   ├── border.svg            ← Red-to-blue gradient bar
 │   └── divider.svg           ← Diamond section divider
 ├── scripts/
+│   ├── 00_complete_worksheet.sql ← All SQL in one importable worksheet (facilitator backup)
 │   ├── 01_setup.sql          ← Module 1: Database, tables, synthetic data
 │   └── 02_ai_enrichment.sql  ← Module 2: Cortex AI enrichment pipeline
 ├── streamlit_app.py          ← Module 5 final version (includes Agent chatbot + AI Scoring — do NOT use for Module 3)
