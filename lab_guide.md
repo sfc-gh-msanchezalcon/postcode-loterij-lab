@@ -1910,46 +1910,19 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION LOTERIJ_PYPI_ACCESS
 ```
 
 ```sql
--- 3. Find the stage that stores your Streamlit app's files
---    Look for a row whose "name" column contains your app name or a random ID.
---    Copy the value from the "name" column — you'll need it in the next step.
-SHOW STAGES IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
-```
-
-> **What is this stage?** When you created the Streamlit app in Module 3 via the Snowsight UI, Snowflake automatically created an internal stage to store the app's files (`streamlit_app.py`, `environment.yml`). We need this stage to exist so the next command can read the code from it. If you don't see a result, go back to **Projects > Streamlit** and make sure your app exists.
->
-> **Finding the right stage name:** The stage is usually named `POSTCODE_LOTERIJ_APP_STAGE`, but Snowflake sometimes assigns a random identifier (e.g., `E05QEV5W4PC0CM0L`). You can also find it by opening the Streamlit editor (**Projects > Streamlit > your app**), clicking on a file (like `environment.yml`), and checking the file path shown — it will contain the stage name. Use whatever name you find in the next step.
-
-```sql
--- 4. Upgrade the Streamlit app to container runtime
---    We recreate the app via SQL so we can attach the compute pool,
---    container runtime, and network access.
---    FROM copies your existing code automatically.
---
---    ⚠️ IMPORTANT: Replace <YOUR_STAGE_NAME> below with the stage name
---    you found in step 3 (e.g., POSTCODE_LOTERIJ_APP_STAGE or E05QEV5W4PC0CM0L).
---    If the stage uses a random ID, also add /versions/live to the path.
---
---    Example with default name:  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP_STAGE'
---    Example with random ID:     FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.E05QEV5W4PC0CM0L/versions/live'
-
+-- 3. Recreate the Streamlit app with container runtime
+--    This replaces the warehouse-based app with a container-based one.
+--    You will paste your code back in the next steps.
 CREATE OR REPLACE STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
-  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.<YOUR_STAGE_NAME>'
   MAIN_FILE = 'streamlit_app.py'
   QUERY_WAREHOUSE = 'LOTERIJ_WH'
   RUNTIME_NAME = 'SYSTEM$ST_CONTAINER_RUNTIME_PY3_11'
   COMPUTE_POOL = 'LOTERIJ_COMPUTE_POOL'
   TITLE = 'Postcode Loterij Intelligence'
   EXTERNAL_ACCESS_INTEGRATIONS = (LOTERIJ_PYPI_ACCESS);
-
--- 5. Activate the live version
---    This tells Snowflake to serve the latest saved code to users.
---    Without this, the app would show a "no live version" error.
-ALTER STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
-  ADD LIVE VERSION FROM LAST;
 ```
 
-Each statement should show: `Statement executed successfully.` or `Streamlit POSTCODE_LOTERIJ_APP successfully created.`
+You should see: `Streamlit POSTCODE_LOTERIJ_APP successfully created.`
 
 > **Snowflake Concept — Container Runtime for Streamlit:**
 >
@@ -1957,12 +1930,12 @@ Each statement should show: `Statement executed successfully.` or `Streamlit POS
 > - **Warehouse runtime** (default): Your app runs on a virtual warehouse. Simple and fast, but the app cannot make web requests or install custom Python packages. This is what we used in Module 3.
 > - **Container runtime**: Your app runs in its own container on a dedicated compute pool. This unlocks the ability to call Snowflake REST APIs (like the Cortex Agent) and install any Python package you need.
 >
-> **Why do we recreate the app with SQL?** In Module 3, we created the app through the Snowsight UI — quick and easy for a warehouse-based dashboard. To upgrade it to container runtime, we need to attach a compute pool and network access, which can only be done via SQL. The `CREATE OR REPLACE` rebuilds the app with these new settings while `FROM` preserves your existing code.
+> **Why do we recreate the app with SQL?** In Module 3, we created the app through the Snowsight UI — quick and easy for a warehouse-based dashboard. To upgrade it to container runtime, we need to attach a compute pool and network access, which can only be done via SQL. The `CREATE OR REPLACE` rebuilds the app with these new settings. Don't worry about losing your code — you'll paste the updated version in the next steps.
 >
 > **What are the three things we just created?**
 > 1. **Compute pool** — a small server that runs the container (auto-suspends when idle to save costs)
 > 2. **Network rule + external access integration** — a security policy that allows the container to download Python packages from `pypi.org` (Snowflake blocks all outbound traffic by default)
-> 3. **Upgraded Streamlit app** — same code, now running on the container with full API access
+> 3. **Upgraded Streamlit app** — now running on the container with full API access
 
 ### 5.6 Upload the Requirements File
 
@@ -1993,10 +1966,15 @@ requests
 
 ### 5.7 Upgrade Tab 4 — Connect the Agent
 
-Now for the exciting part: replace the placeholder Tab 4 with the real Cortex Agent chatbot. 
+Now for the exciting part: we'll paste the full app code with the Cortex Agent chatbot connected.
+
+Since we recreated the app in Step 5.5, the code editor will be empty (or have a default template). We need to paste the dashboard code again — this time with the Agent chatbot enabled in Tab 4.
 
 1. Click on **`streamlit_app.py`** in the file list
-2. Find the **imports** at the top of the file (lines 1-6). **Replace** them with:
+2. **Select all** existing content (Ctrl+A / Cmd+A) and **replace it** with the code from **Module 3, Step 3.3** — the same dashboard code you pasted earlier
+3. Now make two changes to upgrade it for Module 5:
+
+**Change 1 — Update the imports.** Find the imports at the top of the file (lines 1-5) and **replace** them with:
 
 ```python
 import streamlit as st
@@ -2009,7 +1987,7 @@ import requests
 from snowflake.snowpark.context import get_active_session
 ```
 
-3. Find the **Tab 4 placeholder** near the bottom of the file. Use **Ctrl+F / Cmd+F** to search for `# TAB 4: AI ASSISTANT`. You should find a block that looks like this:
+**Change 2 — Replace the Tab 4 placeholder.** Find the Tab 4 placeholder near the bottom of the file. Use **Ctrl+F / Cmd+F** to search for `# TAB 4: AI ASSISTANT`. You should find a block that looks like this:
 
    ```python
    # ============================================================
@@ -2177,6 +2155,13 @@ with tab4:
 ```
 
 4. Click **Run** to reload the app
+5. Once the app loads successfully, go back to your **SQL worksheet** and run:
+
+```sql
+-- Activate the live version so the app is accessible via its URL
+ALTER STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
+  ADD LIVE VERSION FROM LAST;
+```
 
 > **Snowflake Concept — How the Agent Chatbot Works:**
 >

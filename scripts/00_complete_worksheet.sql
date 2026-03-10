@@ -726,18 +726,10 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION LOTERIJ_PYPI_ACCESS
   ALLOWED_NETWORK_RULES = (POSTCODE_LOTERIJ_AI.ANALYTICS.LOTERIJ_PYPI_RULE)
   ENABLED = TRUE;
 
--- 3. Find the stage that stores your Streamlit app's files
---    Look for a row whose "name" column contains your app name or a random ID.
---    Copy the value from the "name" column — you'll need it in the next step.
-SHOW STAGES IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
-
--- 4. Upgrade Streamlit app to container runtime
---    ⚠️ Replace <YOUR_STAGE_NAME> below with the stage name from step 3.
---    If the stage uses a random ID, also add /versions/live to the path.
---    Example with default name:  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP_STAGE'
---    Example with random ID:     FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.E05QEV5W4PC0CM0L/versions/live'
+-- 3. Recreate the Streamlit app with container runtime
+--    This replaces the warehouse-based app with a container-based one.
+--    You will paste your code back in the Streamlit editor afterwards.
 CREATE OR REPLACE STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
-  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.<YOUR_STAGE_NAME>'
   MAIN_FILE = 'streamlit_app.py'
   QUERY_WAREHOUSE = 'LOTERIJ_WH'
   RUNTIME_NAME = 'SYSTEM$ST_CONTAINER_RUNTIME_PY3_11'
@@ -745,7 +737,8 @@ CREATE OR REPLACE STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
   TITLE = 'Postcode Loterij Intelligence'
   EXTERNAL_ACCESS_INTEGRATIONS = (LOTERIJ_PYPI_ACCESS);
 
--- 5. Activate live version
+-- 4. After pasting and running the updated code in the Streamlit editor,
+--    activate the live version so the app is accessible via its URL.
 ALTER STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
   ADD LIVE VERSION FROM LAST;
 
