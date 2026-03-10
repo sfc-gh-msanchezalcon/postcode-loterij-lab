@@ -1910,20 +1910,31 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION LOTERIJ_PYPI_ACCESS
 ```
 
 ```sql
--- 3. Verify the stage exists (Snowflake auto-creates it when you save the app)
---    You should see one row with POSTCODE_LOTERIJ_APP_STAGE
-SHOW STAGES LIKE '%POSTCODE_LOTERIJ_APP%' IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
+-- 3. Find the stage that stores your Streamlit app's files
+--    Look for a row whose "name" column contains your app name or a random ID.
+--    Copy the value from the "name" column — you'll need it in the next step.
+SHOW STAGES IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
 ```
 
 > **What is this stage?** When you created the Streamlit app in Module 3 via the Snowsight UI, Snowflake automatically created an internal stage to store the app's files (`streamlit_app.py`, `environment.yml`). We need this stage to exist so the next command can read the code from it. If you don't see a result, go back to **Projects > Streamlit** and make sure your app exists.
+>
+> **Finding the right stage name:** The stage is usually named `POSTCODE_LOTERIJ_APP_STAGE`, but Snowflake sometimes assigns a random identifier (e.g., `E05QEV5W4PC0CM0L`). You can also find it by opening the Streamlit editor (**Projects > Streamlit > your app**), clicking on a file (like `environment.yml`), and checking the file path shown — it will contain the stage name. Use whatever name you find in the next step.
 
 ```sql
 -- 4. Upgrade the Streamlit app to container runtime
 --    We recreate the app via SQL so we can attach the compute pool,
 --    container runtime, and network access.
 --    FROM copies your existing code automatically.
+--
+--    ⚠️ IMPORTANT: Replace <YOUR_STAGE_NAME> below with the stage name
+--    you found in step 3 (e.g., POSTCODE_LOTERIJ_APP_STAGE or E05QEV5W4PC0CM0L).
+--    If the stage uses a random ID, also add /versions/live to the path.
+--
+--    Example with default name:  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP_STAGE'
+--    Example with random ID:     FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.E05QEV5W4PC0CM0L/versions/live'
+
 CREATE OR REPLACE STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
-  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP_STAGE'
+  FROM '@POSTCODE_LOTERIJ_AI.ANALYTICS.<YOUR_STAGE_NAME>'
   MAIN_FILE = 'streamlit_app.py'
   QUERY_WAREHOUSE = 'LOTERIJ_WH'
   RUNTIME_NAME = 'SYSTEM$ST_CONTAINER_RUNTIME_PY3_11'
