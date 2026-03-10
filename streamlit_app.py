@@ -117,10 +117,7 @@ st.markdown(f"""
         font-size: 1rem;
     }}
 
-    /* Section headers */
-    h3, h2 {{
-        color: #1a1a1a !important;
-    }}
+    /* Section headers — inherit theme color for dark/light mode */
 
     /* Suggestion buttons in chat */
     .suggestion-btn {{
@@ -693,7 +690,15 @@ with tab4:
 
     def get_agent_token():
         """Read the SPCS session token for authenticated API calls."""
-        with open("/snowflake/session/token", "r") as f:
+        token_path = "/snowflake/session/token"
+        if not os.path.exists(token_path):
+            raise RuntimeError(
+                "Session token not found. This means the app is not running on container runtime. "
+                "Go back to Step 5.5 and make sure you ran all three SQL blocks, then run "
+                "ALTER STREAMLIT ... ADD LIVE VERSION FROM LAST in Step 5.7. "
+                "After that, close this tab and reopen the app from Projects > Streamlit."
+            )
+        with open(token_path, "r") as f:
             return f.read().strip()
 
     def call_agent(prompt, conversation_history=None):

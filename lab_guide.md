@@ -961,10 +961,7 @@ st.markdown(f"""
         font-size: 1rem;
     }}
 
-    /* Section headers */
-    h3, h2 {{
-        color: #1a1a1a !important;
-    }}
+    /* Section headers — inherit theme color for dark/light mode */
 
     /* Suggestion buttons in chat */
     .suggestion-btn {{
@@ -1956,7 +1953,7 @@ snowflake-snowpark-python
 requests
 ```
 
-7. You can **delete** the `environment.yml` file (click the three dots next to it and select Delete) — it's no longer needed with container runtime
+7. You may see an `environment.yml` file in the file list — **ignore it**. Container runtime uses `requirements.txt` instead, so `environment.yml` has no effect. It may appear greyed out and cannot be deleted — that's fine
 
 > **Why these packages?**
 > - `streamlit==1.50.0` — The version of Streamlit that runs in container mode
@@ -2017,7 +2014,15 @@ with tab4:
 
     def get_agent_token():
         """Read the SPCS session token for authenticated API calls."""
-        with open("/snowflake/session/token", "r") as f:
+        token_path = "/snowflake/session/token"
+        if not os.path.exists(token_path):
+            raise RuntimeError(
+                "Session token not found. This means the app is not running on container runtime. "
+                "Go back to Step 5.5 and make sure you ran all three SQL blocks, then run "
+                "ALTER STREAMLIT ... ADD LIVE VERSION FROM LAST in Step 5.7. "
+                "After that, close this tab and reopen the app from Projects > Streamlit."
+            )
+        with open(token_path, "r") as f:
             return f.read().strip()
 
     def call_agent(prompt, conversation_history=None):
@@ -2190,6 +2195,7 @@ Now try the AI Assistant in your app:
 > | Problem | Fix |
 > |---------|-----|
 > | `Could not reach the Cortex Agent` | Wait 1-2 minutes for the compute pool to start, then refresh |
+> | `No such file or directory: /snowflake/session/token` | The app is not running on container runtime. Make sure you ran all three SQL blocks in Step 5.5, then ran `ALTER STREAMLIT ... ADD LIVE VERSION FROM LAST` (Step 5.7). After that, **close the app tab and reopen it** from Projects > Streamlit |
 > | `403 Forbidden` | Check that the Streamlit app was created with the correct compute pool and EAI in Step 5.5 |
 > | Agent returns empty responses | Verify the agent exists: `SHOW AGENTS IN SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;` |
 > | App shows a loading error | Make sure you ran all three SQL blocks in Step 5.5 and that the compute pool is running: `SHOW COMPUTE POOLS;` |
