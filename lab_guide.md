@@ -617,6 +617,8 @@ LIMIT 1;
 
 **What to look for**: Each player gets a unique, personalized message that references their specific feedback and situation. This is AI-generated marketing copy running directly in SQL.
 
+> **Your output will differ from others — that's expected.** Unlike SENTIMENT or AI_CLASSIFY which return structured, predictable results, COMPLETE is a free-form LLM that generates unique text each time. Try changing the prompt — for example, ask it to write in Dutch, or change the tone to formal. You'll see how sensitive the output is to prompt wording. This is the power (and challenge) of generative AI.
+
 > **How it works**: `SNOWFLAKE.CORTEX.COMPLETE` takes two arguments: (1) the model name (e.g., `'claude-3-5-sonnet'`), and (2) a text prompt. The LLM generates a response based on the prompt. You can use this for any text generation task — emails, reports, translations, code, and more. The first argument selects which LLM to use; Snowflake supports several models.
 >
  > **Model not available?** If you get an error like `Unknown model` for `claude-3-5-sonnet`, it means this model is not enabled in your account's region. Replace `'claude-3-5-sonnet'` with `'mistral-large2'` or `'llama3.1-70b'` in the query above. You can test if a model works by running: `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2', 'Say hello');`
