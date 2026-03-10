@@ -503,7 +503,7 @@ USE SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
 
 > **Why ANALYTICS?** We switch to the `ANALYTICS` schema because that's where we'll create the AI-enriched table and views (Step 2.6 onwards). In the queries below, we use fully qualified names like `POSTCODE_LOTERIJ_AI.RAW.PLAYERS` to read from the `RAW` schema. Fully qualified names (`DATABASE.SCHEMA.TABLE`) work regardless of which schema you're currently in — they're like an absolute path to the table.
 
-> **⏱ Timing expectation**: Each test query below processes one row through an AI model and typically takes **10–30 seconds** — that's normal. The full table build in Step 2.6 is parallelized across the warehouse and processes all 10,000 rows in about 2–5 minutes.
+> **⏱ Timing expectation**: Each test query below processes one row through an AI model and typically takes **10–30 seconds** — that's normal. The full table build in Step 2.6 is parallelized across the warehouse and processes all 10,000 rows in about 2–8 minutes.
 
 ### 2.1 Sentiment Analysis
 
@@ -624,7 +624,7 @@ LIMIT 1;
 
 ### 2.6 Build the PLAYER_INTELLIGENCE Table
 
-Now we combine the AI functions into one enriched table. **This runs on all 10,000 players and will take 2-5 minutes**.
+Now we combine the AI functions into one enriched table. **This runs on all 10,000 players and will take 2-8 minutes**.
 
 > **Note**: We include SENTIMENT, AI_CLASSIFY, and AI_EXTRACT in the table below, but *not* SUMMARIZE or COMPLETE. Why? Those two functions generate longer text output and are slower per row. Running them on 10,000 rows would take significantly longer. We demonstrated them on small samples in Steps 2.4 and 2.5 so you understand the capability — in production you would run them on targeted subsets (e.g., only churned players) rather than the full table.
 
@@ -678,7 +678,16 @@ SELECT
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS p;
 ```
 
-> **While it runs** (2-5 min): This query calls three AI functions per row across 10,000 rows. Snowflake parallelizes this automatically across the warehouse. Think about how long this would take with external API calls — you would need to manage rate limits, authentication, network latency, and data transfer. Here, it's just SQL.
+> **While it runs** (2-8 min): This query calls three AI functions per row across 10,000 rows. Snowflake parallelizes this automatically across the warehouse. Think about how long this would take with external API calls — you would need to manage rate limits, authentication, network latency, and data transfer. Here, it's just SQL.
+
+> **☕ Good time for a break!** This is the longest-running step in the lab. While the query runs, feel free to grab a coffee or stretch your legs. You can check progress in the **Query History** tab — look for a running query with status `RUNNING`. When it finishes, you'll see `Statement executed successfully` and a row count.
+
+> **⚡ Backup plan — if Step 2.6 takes longer than 8 minutes**: Your facilitator may have a pre-built backup table available. Cancel the running query, then run:
+> ```sql
+> CREATE OR REPLACE TABLE POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
+> AS SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE_BACKUP;
+> ```
+> This loads a pre-computed version of the table so you can continue with the rest of the lab. Ask your facilitator if the backup is available.
 
 ### 2.7 Create Helper Views
 
