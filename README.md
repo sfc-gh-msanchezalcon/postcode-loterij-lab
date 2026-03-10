@@ -97,7 +97,7 @@ postcode_loterij_lab/
 │   ├── border.svg            ← Red-to-blue gradient bar
 │   └── divider.svg           ← Diamond section divider
 ├── scripts/
-│   ├── 00_complete_worksheet.sql ← All SQL in one importable worksheet (facilitator backup)
+│   ├── 00_complete_worksheet.sql ← All SQL in one importable file (facilitator backup)
 │   ├── 01_setup.sql          ← Module 1: Database, tables, synthetic data
 │   └── 02_ai_enrichment.sql  ← Module 2: Cortex AI enrichment pipeline
 ├── streamlit_app.py          ← Module 5 final version (includes Agent chatbot + AI Scoring — do NOT use for Module 3)

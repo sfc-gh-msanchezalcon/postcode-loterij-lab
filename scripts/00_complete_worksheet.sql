@@ -1,15 +1,14 @@
 -- ============================================================
--- POSTCODE LOTERIJ AI LAB — COMPLETE SQL WORKSHEET
+-- POSTCODE LOTERIJ AI LAB — COMPLETE SQL
 -- ============================================================
 -- This file contains ALL SQL commands from the lab guide.
--- Import it as a worksheet in Snowsight so you don't need to
+-- Import it into Workspaces in Snowsight so you don't need to
 -- copy-paste individual commands.
 --
 -- HOW TO USE:
---   1. In Snowsight, click + > SQL Worksheet
---   2. Click the ↓ button (top-right) > "Import from file"
---   3. Select this file
---   4. Run each block one at a time (select the block, then Ctrl+Enter)
+--   1. In Snowsight, click Projects > Workspaces
+--   2. Click + > Upload Files and select this file
+--   3. Run each block one at a time (select the block, then Ctrl+Enter)
 --
 -- ============================================================
 

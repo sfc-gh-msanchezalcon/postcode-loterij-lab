@@ -92,20 +92,19 @@ By the end you will have:
 
 > **What is Snowsight?** Snowsight is Snowflake's built-in web interface. It is where you write SQL, build dashboards, manage data, and create apps — all from the browser. There is nothing to install.
 
-### 0.2 Open a SQL Worksheet
+### 0.2 Open a SQL File in Workspaces
 
-A SQL Worksheet is where you write and run SQL commands against Snowflake.
+Workspaces is where you write and run SQL commands against Snowflake.
 
-1. In the left sidebar, click **Projects** > **Worksheets**
-2. Click the blue **+** button in the top-right corner
-3. Select **SQL Worksheet** from the dropdown
-4. A new worksheet opens. Click on the tab name (top-left, it will say something like "Untitled") and rename it to `Postcode Loterij Lab`
+1. In the left sidebar, click **Projects** > **Workspaces**
+2. Click the **+** button (or **+ Add New** if this is your first time) and select **SQL File**
+3. Rename the file to `Postcode Loterij Lab`
 
 > **Tip**: You can run individual SQL statements by placing your cursor on a statement and pressing **Ctrl+Enter** (Windows) or **Cmd+Enter** (Mac). To run multiple statements, select them all first, then press the same shortcut.
 
 ### 0.3 Set Your Role and Enable Cross-Region AI
 
-Copy and run the following two statements in your worksheet:
+Copy and run the following two statements in your SQL file:
 
 ```sql
 -- Use the ACCOUNTADMIN role (gives full permissions for this lab)
@@ -134,7 +133,7 @@ You should see `Statement executed successfully.` for each.
 Copy and run this block:
 
 ```sql
--- Make sure you have the right role (in case you opened a new worksheet)
+-- Make sure you have the right role (in case you opened a new SQL file)
 USE ROLE ACCOUNTADMIN;
 
 -- Create a database to hold all our lab data
@@ -1650,7 +1649,7 @@ A **Cortex Agent** is an AI orchestrator that sits on top of tools like Semantic
 
 ### 5.1 Create the Semantic View
 
-This semantic view defines the business meaning of our PLAYER_INTELLIGENCE table. Run this in your SQL worksheet:
+This semantic view defines the business meaning of our PLAYER_INTELLIGENCE table. Run this in your SQL file:
 
 ```sql
 USE SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
@@ -1885,7 +1884,7 @@ Our Streamlit app currently runs on a **warehouse** — great for dashboards, bu
 
 > **Trial account note**: Steps 5.5–5.8 require **external network access** (for installing PyPI packages in the container runtime), which is [not available on trial accounts](https://docs.snowflake.com/en/user-guide/admin-trial-account#current-limitations-for-trial-accounts). If the network rule or external access integration fails, you can skip steps 5.5–5.8. You already tested the agent in Step 5.4 via **AI & ML > Agents** — that works on any account. The Streamlit chatbot is just another way to access the same agent. To remove this limitation, convert your trial to a paid account.
 
-Run these SQL statements **one block at a time** in your SQL worksheet:
+Run these SQL statements **one block at a time** in your SQL file:
 
 ```sql
 -- 1. Create a compute pool (the server that will run our container)
@@ -2155,7 +2154,7 @@ with tab4:
 ```
 
 4. Click **Run** to reload the app
-5. Once the app loads successfully, go back to your **SQL worksheet** and run:
+5. Once the app loads successfully, go back to your **SQL file** and run:
 
 ```sql
 -- Activate the live version so the app is accessible via its URL
