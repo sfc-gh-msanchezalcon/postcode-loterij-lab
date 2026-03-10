@@ -1389,7 +1389,8 @@ with tab3:
             with col_stats:
                 seg_raw = row["PLAYER_SEGMENT_JSON"]
                 try:
-                    seg = json.loads(seg_raw)["label"] if isinstance(seg_raw, str) else seg_raw.get("label", str(seg_raw))
+                    parsed = json.loads(seg_raw) if isinstance(seg_raw, str) else seg_raw
+                    seg = parsed.get("labels", [parsed.get("label", seg_raw)])[0]
                 except Exception:
                     seg = str(seg_raw)
 
