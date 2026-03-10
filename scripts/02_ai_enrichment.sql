@@ -22,7 +22,7 @@ SELECT
     SNOWFLAKE.CORTEX.SENTIMENT(FEEDBACK_TEXT) AS SENTIMENT_SCORE
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
 WHERE FEEDBACK_TEXT != 'No feedback provided.'
-LIMIT 3;
+LIMIT 1;
 
 -- ============================================================
 -- STEP 2: Classify Players into Segments using AI
@@ -44,7 +44,7 @@ SELECT
         ['High-Value Loyal', 'Engaged Regular', 'New Player', 'At-Risk', 'Dormant', 'Price-Sensitive']
     ) AS PLAYER_SEGMENT
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS p
-LIMIT 3;
+LIMIT 1;
 
 -- ============================================================
 -- STEP 3: Extract Structured Insights with AI_EXTRACT
@@ -62,7 +62,7 @@ SELECT
         ['engagement_level', 'churn_risk', 'preferred_channel', 'key_motivation']
     ) AS EXTRACTED_INSIGHTS
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
-LIMIT 3;
+LIMIT 1;
 
 -- ============================================================
 -- STEP 4: Summarize Player Profiles
@@ -80,7 +80,7 @@ SELECT
         'Their feedback: "' || FEEDBACK_TEXT || '"'
     ) AS PLAYER_SUMMARY
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
-LIMIT 3;
+LIMIT 1;
 
 -- ============================================================
 -- STEP 5: Generate Personalized Retention Messages
@@ -102,7 +102,7 @@ SELECT
     ) AS RETENTION_MESSAGE
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
 WHERE STATUS IN ('Churned', 'Paused')
-LIMIT 3;
+LIMIT 1;
 
 -- ============================================================
 -- STEP 6: Build the PLAYER_INTELLIGENCE table

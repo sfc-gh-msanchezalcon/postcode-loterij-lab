@@ -503,11 +503,13 @@ USE SCHEMA POSTCODE_LOTERIJ_AI.ANALYTICS;
 
 > **Why ANALYTICS?** We switch to the `ANALYTICS` schema because that's where we'll create the AI-enriched table and views (Step 2.6 onwards). In the queries below, we use fully qualified names like `POSTCODE_LOTERIJ_AI.RAW.PLAYERS` to read from the `RAW` schema. Fully qualified names (`DATABASE.SCHEMA.TABLE`) work regardless of which schema you're currently in — they're like an absolute path to the table.
 
+> **⏱ Timing expectation**: Each test query below processes one row through an AI model and typically takes **10–30 seconds** — that's normal. The full table build in Step 2.6 is parallelized across the warehouse and processes all 10,000 rows in about 2–5 minutes.
+
 ### 2.1 Sentiment Analysis
 
 Our first AI function: `SNOWFLAKE.CORTEX.SENTIMENT`. It scores text on a scale from **-1** (very negative) to **+1** (very positive).
 
-**Test it on 3 rows first** to see how it works:
+**Test it on one row first** to see how it works:
 
 ```sql
 SELECT
@@ -516,7 +518,7 @@ SELECT
     SNOWFLAKE.CORTEX.SENTIMENT(FEEDBACK_TEXT) AS SENTIMENT_SCORE
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
 WHERE FEEDBACK_TEXT != 'No feedback provided.'
-LIMIT 3;
+LIMIT 1;
 ```
 
 **What to look for**: Compare the feedback text with the score. A player saying *"I love playing with my neighbours"* should have a high positive score. A player saying *"Too expensive for what you get"* should have a negative score.
@@ -541,7 +543,7 @@ SELECT
         ['High-Value Loyal', 'Engaged Regular', 'New Player', 'At-Risk', 'Dormant', 'Price-Sensitive']
     ) AS PLAYER_SEGMENT
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS p
-LIMIT 3;
+LIMIT 1;
 ```
 
 **What to look for**: The result is a JSON object like `{"labels":["High-Value Loyal"]}`. The AI reads the entire profile and picks the most appropriate label from your array.
@@ -564,7 +566,7 @@ SELECT
         ['engagement_level', 'churn_risk', 'preferred_channel', 'key_motivation']
     ) AS EXTRACTED_INSIGHTS
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
-LIMIT 3;
+LIMIT 1;
 ```
 
 **What to look for**: The result is a JSON object with each field you requested, e.g., `{"engagement_level": "high", "churn_risk": "low", ...}`. The AI interprets what each field name means in context.
@@ -587,7 +589,7 @@ SELECT
         'Their feedback: "' || FEEDBACK_TEXT || '"'
     ) AS PLAYER_SUMMARY
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
-LIMIT 3;
+LIMIT 1;
 ```
 
 > **Use case**: Imagine having 10,000 customer profiles. Instead of reading each one, you get a one-sentence summary. This is useful for customer service, account management, and reporting.
@@ -611,7 +613,7 @@ SELECT
     ) AS RETENTION_MESSAGE
 FROM POSTCODE_LOTERIJ_AI.RAW.PLAYERS
 WHERE STATUS IN ('Churned', 'Paused')
-LIMIT 3;
+LIMIT 1;
 ```
 
 **What to look for**: Each player gets a unique, personalized message that references their specific feedback and situation. This is AI-generated marketing copy running directly in SQL.
