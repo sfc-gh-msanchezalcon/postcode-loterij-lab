@@ -2009,6 +2009,24 @@ with tab4:
     st.subheader("Ask questions about player data and charity impact")
     st.caption("Powered by Cortex Agent + Semantic View — your data never leaves Snowflake")
 
+    # ---- Check for container runtime ----
+    if not os.path.exists("/snowflake/session/token"):
+        st.warning(
+            "**This tab requires container runtime.**\n\n"
+            "The AI Assistant calls the Cortex Agent API, which needs a session token "
+            "that is only available when the app runs on container runtime.\n\n"
+            "**On a trial account?** Container runtime requires external network access, "
+            "which is not available on trial accounts. You can still chat with the agent — "
+            "go to **AI & ML > Agents** in the Snowsight sidebar and open "
+            "**Loterij Intelligence Agent** directly.\n\n"
+            "**Not on a trial account?** Go back to Step 5.5 and make sure you ran all three "
+            "SQL blocks (compute pool, network rule, external access integration), then run "
+            "`ALTER STREAMLIT ... ADD LIVE VERSION FROM LAST` in Step 5.7. "
+            "After that, close this tab and reopen the app from **Projects > Streamlit**.",
+            icon="⚠️",
+        )
+        st.stop()
+
     # ---- Cortex Agent helpers ----
     AGENT_ENDPOINT = (
         "/api/v2/databases/POSTCODE_LOTERIJ_AI/schemas/ANALYTICS"
