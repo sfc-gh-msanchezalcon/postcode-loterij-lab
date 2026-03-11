@@ -742,20 +742,3 @@ ALTER STREAMLIT POSTCODE_LOTERIJ_AI.ANALYTICS.POSTCODE_LOTERIJ_APP
   ADD LIVE VERSION FROM LAST;
 
 
--- ████████████████████████████████████████████████████████████
--- FACILITATOR ONLY: Export/import backup table
--- ████████████████████████████████████████████████████████████
--- Run this AFTER a successful Step 2.6 to create a backup that
--- attendees can use if their own 2.6 run takes too long.
---
--- EXPORT (run once, after your own successful 2.6):
---   CREATE OR REPLACE TABLE POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE_BACKUP
---   AS SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE;
---
--- GRANT (so attendees can read it):
---   GRANT SELECT ON TABLE POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE_BACKUP
---   TO ROLE PUBLIC;
---
--- ATTENDEE FALLBACK (if 2.6 takes too long, cancel it and run):
---   CREATE OR REPLACE TABLE POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE
---   AS SELECT * FROM POSTCODE_LOTERIJ_AI.ANALYTICS.PLAYER_INTELLIGENCE_BACKUP;
